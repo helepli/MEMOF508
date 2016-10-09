@@ -34,10 +34,12 @@ try:
 	events = events.split(';') # events = ['a','b','c']
 	nbrEvents = len(events)
 	
+	traceID = 0
 	for setID in range (len(sets)): # ex : (a,c)2
 		seti = sets[setID].strip('(').split(')') # ['a,c', '2']
 		transactions = seti[0].split(',') # traces = ['a','c']
-		for traceID in range (int(seti[1])):
+		for i in range (int(seti[1])):
+			traceID += 1
 			for tID in range (len(transactions)):
 				binary = ''
 				for e in range(nbrEvents):
@@ -52,7 +54,7 @@ try:
 						else:
 							binary+='0;'
 				
-				GSPinput.write('trace'+str(traceID)+';'+str(tID)+';'+binary+'\n')
+				GSPinput.write('trace'+str(traceID)+';'+str(tID)+';'+binary+'\n') 
 except IOError:
 	print ("Error: can\'t create or write in output file!")
 else:
