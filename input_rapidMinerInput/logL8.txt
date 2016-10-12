@@ -1,0 +1,2 @@
+a,b,c,d
+L8=[(a,b,d)3, (a,b,c,b,d)2, (a,b,c,b,c,b,d)1] 
