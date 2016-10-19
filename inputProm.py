@@ -10,17 +10,17 @@ def getMaximal(freqSeq):
 		if maxLength < len(freqSeq[i]):
 			maxLength = len(freqSeq[i])
 	k = maxLength
-	toBeRemoved = []
+	toBeRemoved = set()
 	while k > 1:
 		for i in freqSeq.keys():
 			if len(freqSeq[i]) == k:
 				for j in freqSeq.keys():
 					if j != i and containsSubseq(freqSeq[i], freqSeq[j]):
-						toBeRemoved.append(j)
+						toBeRemoved.add(j)
 		if len(toBeRemoved) != 0:
 			for t in toBeRemoved:
 				del freqSeq[t]
-				toBeRemoved = []					 
+				toBeRemoved = set()					 
 		k-=1
 	return freqSeq
 	
@@ -28,13 +28,9 @@ def getMaximal(freqSeq):
 def getClosed(freqSeq):
 	toBeRemoved = set()
 	for i in freqSeq.keys(): 
-		print(i)
 		for j in freqSeq.keys():
 			if len(freqSeq[i]) < len(freqSeq[j]) and containsSubseq(freqSeq[j], freqSeq[i]):
-				print("yeaaaaah")
 				if supports[i-1] == supports[j-1]:
-					print(freqSeq[i])
-					print(freqSeq[j])
 					toBeRemoved.add(i)
 	if len(toBeRemoved) != 0:
 		for t in toBeRemoved:
@@ -43,14 +39,10 @@ def getClosed(freqSeq):
 	return freqSeq
 	
 def containsSubseq(lst, sublst):
-	print(lst)
-	print(sublst)
 	result = []
 	j = 0
 	for item in lst:
-		print(j)
 		if item == sublst[j]:
-			print(item)
 			result.append(item)
 			j += 1
 			if j == len(sublst):
@@ -122,11 +114,11 @@ else:
 try:
 	smth = ""
 	if maximal:
-		smth = "max"
+		smth = "_max"
 	elif closed:
-		smth = "closed"
+		smth = "_closed"
 
-	outName = "log_" + smth + filename.strip('.rqes') + ".txt"
+	outName = "log" + smth + filename.strip('.rqes') + ".txt"
 	promInput = open(outName,'wt',encoding='utf-8')
 	promInput.write('traceID;eventID \n')
 	traceID = 0
