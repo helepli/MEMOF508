@@ -3,6 +3,7 @@ import sys
 
 maximal = False 
 closed = False
+subString = False
 
 def getMaximal(freqSeq):
 	maxLength = 0
@@ -15,7 +16,7 @@ def getMaximal(freqSeq):
 		for i in freqSeq.keys():
 			if len(freqSeq[i]) == k:
 				for j in freqSeq.keys():
-					if j != i and containsSubseq(freqSeq[i], freqSeq[j]):
+					if j != i and isSubseq(freqSeq[i], freqSeq[j]):
 						toBeRemoved.add(j)
 		if len(toBeRemoved) != 0:
 			for t in toBeRemoved:
@@ -29,14 +30,20 @@ def getClosed(freqSeq):
 	toBeRemoved = set()
 	for i in freqSeq.keys(): 
 		for j in freqSeq.keys():
-			if len(freqSeq[i]) < len(freqSeq[j]) and containsSubseq(freqSeq[j], freqSeq[i]):
+			if len(freqSeq[i]) < len(freqSeq[j]) and isSubseq(freqSeq[j], freqSeq[i]):
 				if supports[i-1] == supports[j-1]:
 					toBeRemoved.add(i)
 	if len(toBeRemoved) != 0:
 		for t in toBeRemoved:
 			del freqSeq[t]	
-	
+			
 	return freqSeq
+
+def isSubseq(lst, sublst):
+	if subString:
+		return containsSubstring(lst, sublst)
+	else:
+		return containsSubseq(lst, sublst)
 	
 def containsSubseq(lst, sublst):
 	result = []
@@ -50,7 +57,7 @@ def containsSubseq(lst, sublst):
 	return (result == sublst)
 
 
-def containsSublist(lst, sublst):
+def containsSubstring(lst, sublst):
     n = len(sublst)
     return any((sublst == lst[i:i+n]) for i in range(len(lst)-n+1))
     
@@ -61,11 +68,11 @@ if len(sys.argv) < 2:
 	exit()
 else:
 	filename = sys.argv[1]
-if len(sys.argv) == 3:
-	if sys.argv[2] == "-max":
-		maximal = True
-	elif sys.argv[2] == "-clo":
-		closed = True
+if len(sys.argv) >= 3:
+	maximal = sys.argv[2] == "-max"
+	closed = sys.argv[2] == "-clo"
+	if len(sys.argv) == 4:
+		subString = sys.argv[3] == "-str"
 
 try:
 	log = open(filename, encoding='utf-8')
@@ -117,6 +124,8 @@ try:
 		smth = "_max"
 	elif closed:
 		smth = "_closed"
+	if subString:
+		smth+="_subStr"
 
 	outName = "log" + smth + filename.strip('.rqes') + ".txt"
 	promInput = open(outName,'wt',encoding='utf-8')
