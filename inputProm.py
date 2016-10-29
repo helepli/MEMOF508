@@ -4,6 +4,7 @@ import sys
 maximal = False 
 closed = False
 subString = False
+mapping = False
 
 def getMaximal(freqSeq):
 	maxLength = 0
@@ -46,76 +47,123 @@ def isSubseq(lst, sublst):
 		return containsSubseq(lst, sublst)
 	
 def containsSubseq(lst, sublst):
+	lenSublst = len(getIndexes(lst, sublst))
+	return (lenSublst == len(sublst))
+
+def getIndexes(lst, sublst): # returns a list of positions in which the items in a subsequence appear in a sequence
 	result = []
 	j = 0
-	for item in lst:
-		if item == sublst[j]:
-			result.append(item)
+	for i in range(len(lst)):
+		if lst[i] == sublst[j]:
+			result.append(i)
 			j += 1
 			if j == len(sublst):
 				break
-	return (result == sublst)
+	return result
 
 
 def containsSubstring(lst, sublst):
     n = len(sublst)
     return any((sublst == lst[i:i+n]) for i in range(len(lst)-n+1))
     
+def getFreqSeq(freqSeq): # returns a dict containing the frequent sequences (logfile arg) mined from the log using GSP in RapidMiner
+	freqSeq.readline() # firstline is useless
+	seqs = dict()
+	seqs[1] = freqSeq.readline().strip().split()
+	if closed:
+		supports = []
+		supports.append(float(seqs[1][2].strip(':')))
+	seqs[1] = seqs[1][3:]
+	for i in range (len(seqs[1])):
+		seqs[1][i] = seqs[1][i].strip('<>')
+	
+	line = freqSeq.readline().strip()
+	j = 2
+	while line!="":
+		seqs[j] = line.split()
+		if closed:
+			supports.append(float(seqs[j][0].strip(':')))
+		seqs[j] = seqs[j][1:]
+		for e in range (len(seqs[j])):
+			seqs[j][e] = seqs[j][e].strip('<>')
+		j+=1
+		line = freqSeq.readline().strip()
+	print(seqs)
+	return seqs
     
+def getTraces(log): # returns a dict containing the traces in the original logfile 
+	events = log.readline().strip().replace(',', ';') # a,b,c
+	print("Events present in this log are: "+events)
+	logContent = log.readline().strip().split('=') # L7=[(a,c)2, (a,b,c)3, (a,b,b,c)2, (a,b,b,b,b,c)1]
+	print("Log content: ")
+	print(logContent)
+	logName = logContent[0] # L7
+	sets = logContent[1].strip('][').split(', ') # ['(a,c)2','(a,b,c)3','(a,b,b,c)2','(a,b,b,b,b,c)1']
+	traces = dict()
+	for i in range(len(sets)):
+		sets[i] = sets[i].split(')') # sets[i] = ['(ac', '2']
+		sets[i] = sets[i][0].strip('(').split(',') # sets[i] = ['a', 'c']
+		print(sets[i])
+		traces[i] = sets[i]		
+	return traces
+
+def getMapping(traces, seqs):
+	result = dict()
+	for i in traces.keys():
+		result[i] = ['gap' for i in range(len(traces[i]))]
+		for j in seqs.keys():
+			if isSubseq(traces[i] ,seqs[j]):
+				indexes = getIndexes(traces[i] ,seqs[j])
+				for index in indexes:
+					result[i][index] = traces[i][index]
+			if result[i] == traces[i]:
+				break
+	print("Result of the mapping:")
+	print(result)
+	return result
+		
     	     
 if len(sys.argv) < 2:
 	print("This program needs a log.txt file as parameter")
 	exit()
 else:
-	filename = sys.argv[1]
+	seqFile = sys.argv[1]
 if len(sys.argv) >= 3:
 	maximal = sys.argv[2] == "-max"
 	closed = sys.argv[2] == "-clo"
 	if len(sys.argv) == 4:
 		subString = sys.argv[3] == "-str"
+		mapping = sys.argv[3] == "-map"
+		if mapping:
+			logFile = sys.argv[2]
 
 try:
-	log = open(filename, encoding='utf-8')
-	log.readline() # firstline is useless
-	traces = dict()
-	traces[1] = log.readline().strip().split()
-	if closed == True:
-		supports = []
-		supports.append(float(traces[1][2].strip(':')))
-	traces[1] = traces[1][3:]
-	for i in range (len(traces[1])):
-		traces[1][i] = traces[1][i].strip('<>')
-	
-	line = log.readline().strip()
-	j = 2
-	while line!="":
-		traces[j] = line.split()
-		if closed:
-			supports.append(float(traces[j][0].strip(':')))
-		traces[j] = traces[j][1:]
-		for e in range (len(traces[j])):
-			traces[j][e] = traces[j][e].strip('<>')
-		j+=1
-		line = log.readline().strip()
-	print(traces)
+	freqSeq = open(seqFile, encoding='utf-8')
+	seqs = getFreqSeq(freqSeq)
+	if mapping:
+		log = open(logFile, encoding='utf-8')
+		traces = getTraces(log)
+		traces = getMapping(traces, seqs)
 	
 	if maximal:
-		traces = getMaximal(traces)
+		seqs = getMaximal(seqs)
 		print("After pruning non-maximal sequences: ") 			
-		print(traces)
+		print(seqs)
 	elif closed:
 		print("Supports: ")
 		print(supports)
-		traces = getClosed(traces)
+		seqs = getClosed(seqs)
 		print("After pruning non-closed sequences: ")
-		print(traces)
+		print(seqs)
 	
 except IOError:
 	print ("Error: can\'t find file or read content!")
 	exit()
 else:
 	print ("Opened and read the file successfully")
-	log.close()
+	freqSeq.close()
+	if mapping:
+		log.close()
 	
 	
 try:
@@ -127,13 +175,18 @@ try:
 	if subString:
 		smth+="_subStr"
 
-	outName = "log" + smth + filename.strip('.rqes') + ".txt"
+	outName = "log" + smth + seqFile.strip('.rqes') + ".txt"
 	promInput = open(outName,'wt',encoding='utf-8')
 	promInput.write('traceID;eventID \n')
 	traceID = 0
-	for i in traces.keys():
-		for j in range(len(traces[i])):
-			promInput.write('t'+str(traceID)+';'+traces[i][j]+'\n')
+	result = dict()
+	if mapping:
+		result = traces
+	else:
+		result = seqs
+	for i in result.keys():
+		for j in range(len(result[i])):
+			promInput.write('t'+str(traceID)+';'+result[i][j]+'\n')
 		traceID += 1
 except IOError:
 	print ("Error: can\'t create or write in output file!")
