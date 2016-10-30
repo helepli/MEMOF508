@@ -32,7 +32,7 @@ def getClosed(freqSeq):
 	for i in freqSeq.keys(): 
 		for j in freqSeq.keys():
 			if len(freqSeq[i]) < len(freqSeq[j]) and isSubseq(freqSeq[j], freqSeq[i]):
-				if supports[i-1] == supports[j-1]:
+				if supports[i] == supports[j]:
 					toBeRemoved.add(i)
 	if len(toBeRemoved) != 0:
 		for t in toBeRemoved:
@@ -60,7 +60,15 @@ def getIndexes(lst, sublst): # returns a list of positions in which the items in
 			if j == len(sublst):
 				break
 	return result
-
+	
+def isInSet(aSet, seq): # check if a sequence is a subsequence of a trace in a set of traces
+	isIn = False
+	i = 0
+	length = len(aSet.keys())-1
+	while not isIn and i<length:
+		isIn = isSubseq(aSet[i], seq)
+		i+=1
+	return isIn
 
 def containsSubstring(lst, sublst):
     n = len(sublst)
@@ -69,16 +77,16 @@ def containsSubstring(lst, sublst):
 def getFreqSeq(freqSeq): # returns a dict containing the frequent sequences (logfile arg) mined from the log using GSP in RapidMiner
 	freqSeq.readline() # firstline is useless
 	seqs = dict()
-	seqs[1] = freqSeq.readline().strip().split()
+	seqs[0] = freqSeq.readline().strip().split()
 	if closed:
 		supports = []
-		supports.append(float(seqs[1][2].strip(':')))
-	seqs[1] = seqs[1][3:]
-	for i in range (len(seqs[1])):
-		seqs[1][i] = seqs[1][i].strip('<>')
+		supports.append(float(seqs[0][2].strip(':')))
+	seqs[0] = seqs[0][3:]
+	for i in range (len(seqs[0])):
+		seqs[0][i] = seqs[0][i].strip('<>')
 	
 	line = freqSeq.readline().strip()
-	j = 2
+	j = 1
 	while line!="":
 		seqs[j] = line.split()
 		if closed:
@@ -90,6 +98,78 @@ def getFreqSeq(freqSeq): # returns a dict containing the frequent sequences (log
 		line = freqSeq.readline().strip()
 	print(seqs)
 	return seqs
+
+def getFSLengthTwo(freqSeq):
+	result = dict()
+	for i in freqSeq.keys():
+		if len(freqSeq[i]) == 2:
+			result[i] = freqSeq[i]
+	return result
+
+def preProcess(traces, freqSeq):
+	#result = checkPerTwo(traces, freqSeq)
+	#FSLengthTwo = getFSLengthTwo(freqSeq)
+	result = addDependencies(traces)
+	return result
+	
+def checkPerTwo(traces, freqSeq): # this should get rid of fake parallelism for example
+	result = dict()
+	frequent = True
+	print (freqSeq)
+	for i in traces.keys():
+		for j in range(len(traces[i])-1):
+			candidate = [traces[i][j], traces[i][j+1]]
+			frequent = isInSet(freqSeq, candidate)
+			if not frequent:
+				break
+		if frequent:
+			result[i] = traces[i]
+	print("After pruning traces containing non frequent 'a follows b' relationships remaining after mapping: ")
+	print(result)
+	return result
+
+def addDependencies(traces):
+	result = dict(traces)
+	for i in traces.keys():
+		g = 0
+		for j in range(i+1, len(traces.keys())):
+			while g < len(traces[i]) and traces[i] != traces[j]:
+				for h in range (len(traces[j])):
+					if traces[i][g] == traces[j][h]:
+						print("tracei")
+						print(traces[i])
+						print("tracej")
+						print(traces[j])
+						print(traces[i][g])
+						candidate1 = traces[i][0:g]
+						candidate1.extend(traces[j][h:len(traces[j])+1])
+						print("candidate1")
+						print(candidate1)
+						candidate2 = traces[j][0:h]
+						candidate2.extend(traces[i][g:len(traces[i])+1])
+						print("candidate2")
+						print(candidate2)
+						if (not candidate1 in traces.values()) or (not candidate2 in traces.values()):
+							newbie1 = traces[i][0:g]
+							newbie1.extend(traces[i][g+1:len(traces[i])+1])
+							print("newbie1")
+							print(newbie1)
+							newbie2 = traces[j][0:h]
+							newbie2.extend(traces[j][h+1:len(traces[j])+1])
+							print("newbie2")
+							print(newbie2)
+							if newbie1 == newbie2 and not newbie1 in result.values():
+								result[len(result.keys())+1] = newbie1
+							else:
+								if not newbie1 in result.values():
+									result[len(result.keys())+1] = newbie1
+								if not newbie2 in result.values():
+									result[len(result.keys())+1] = newbie2
+				g+=1
+	print("After adding some extra dependencies:")
+	print(result)				
+	return result
+	
     
 def getTraces(log): # returns a dict containing the traces in the original logfile 
 	events = log.readline().strip().replace(',', ';') # a,b,c
@@ -144,6 +224,7 @@ try:
 		log = open(logFile, encoding='utf-8')
 		traces = getTraces(log)
 		traces = getMapping(traces, seqs)
+		traces = preProcess(traces, seqs)
 	
 	if maximal:
 		seqs = getMaximal(seqs)
