@@ -195,12 +195,14 @@ class AlphaMiner:
 			startEvents = ""
 			if len(self.Ti) == 1:
 				model.write('start -> '+self.Ti[0]+'\n') # start -> (a,b)
-			for i in range(len(self.Ti)):
-				if i == len(self.Ti)-1:
-					startEvents+=self.Ti[i]
-				else:
-					startEvents+=self.Ti[i]+" "
-			model.write('start -> {'+startEvents+'}\n')
+			else:
+				endEvents = ""
+				for i in range(len(self.Ti)):
+					if i == len(self.Ti)-1:
+						startEvents+=self.Ti[i]
+					else:
+						startEvents+=self.Ti[i]+" "
+				model.write('start -> {'+startEvents+'}\n')
 			
 			i = 0
 			for place in self.Yl:
