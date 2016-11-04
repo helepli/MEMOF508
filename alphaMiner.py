@@ -116,31 +116,39 @@ class AlphaMiner:
 		print(self.Yl)
 		
 	def getMaximalPlaces(self):
-		for i in range(len(self.Xl)):
+		self.Yl = list(self.Xl)
+		toBeRemoved = []
+		for i in range(len(self.Yl)):
 			found = False
-			place1 = self.Xl[i]
-			for j in range(i+1,len(self.Xl)):
-				place2 = self.Xl[j]
+			place1 = self.Yl[i]
+			for j in range(i+1,len(self.Yl)):
+				place2 = self.Yl[j]
 				if self.AisInB(place1[0], place2[0]) and self.AisInB(place1[1], place2[1]):
 					found = True
-					if not self.isAlreadyIn(place2, self.Yl):
-						self.Yl.append(place2)
+					toBeRemoved.append(place1)
+					#~ if not self.isAlreadyIn(place2, self.Yl):
+						#~ self.Yl.append(place2)
 					break
 				elif self.AisInB(place2[0], place1[0]) and self.AisInB(place2[1], place1[1]): 
 					found = True
-					if not self.isAlreadyIn(place1, self.Yl):
-						self.Yl.append(place1)
+					toBeRemoved.append(place2)
+					#~ if not self.isAlreadyIn(place1, self.Yl):
+						#~ self.Yl.append(place1)
 					break
-				elif j == len(self.Xl)-1 and not found:
-					if not self.isAlreadyIn(place1, self.Yl):
-						self.Yl.append(place1)
+				#~ elif j == len(self.Yl)-1 and not found:
+					#~ if not self.isAlreadyIn(place1, self.Yl):
+						#~ self.Yl.append(place1)
+		for place in toBeRemoved:
+			i = self.Yl.index(place)
+			del self.Yl[i]
+				
 						
-	def isAlreadyIn(self, newPlace, setOfPlaces):
-		result = False
-		for place in setOfPlaces:
-			if self.AisInB(place[0], newPlace[0]) and self.AisInB(place[1], newPlace[1]) or self.AisInB(newPlace[0], place[0]) and self.AisInB(newPlace[1], place[1]):
-				result = True
-		return result
+	#~ def isAlreadyIn(self, newPlace, setOfPlaces):
+		#~ result = False
+		#~ for place in setOfPlaces:
+			#~ if self.AisInB(place[0], newPlace[0]) and self.AisInB(place[1], newPlace[1]) or self.AisInB(newPlace[0], place[0]) and self.AisInB(newPlace[1], place[1]):
+				#~ result = True
+		#~ return result
 		
 	def AisInB(self, A, B):
 		isIn = True
@@ -184,12 +192,17 @@ class AlphaMiner:
 	def writeGraphviz(self):
 		try:
 			model = open(self.logName+".dot",'wt',encoding='utf-8')
-			model.write('digraph G \n{\n {\n node [shape=circle style=filled]\n start\n end\n')
+			model.write('digraph G \n{\n graph [rankdir = "LR"]\n {\n node [shape=circle style=filled]\n start\n end\n')
 			places = []
 			print("len(self.Yl) "+str(len(self.Yl)))
 			for i in range(len(self.Yl)):
 				model.write(' c'+str(i+1)+'\n')
 				places.append('c'+str(i+1))
+			model.write(' }\n')
+			model.write(' {\n node [fontsize=35]\n')
+			
+			for activity in self.events.keys():
+				 model.write(activity+'\n')
 			model.write(' }\n')
 			
 			startEvents = ""
