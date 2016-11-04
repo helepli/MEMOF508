@@ -100,6 +100,20 @@ def getFreqSeq(freqSeq): # returns a dict containing the frequent sequences (log
 	print(seqs)
 	return seqs
 
+def getEvents(seqs):
+	result = ""
+	events = set()
+	for i in seqs.keys():
+			for j in range(len(seqs[i])):
+				events.add(seqs[i][j])
+	events = list(events)
+	for e in range(len(events)):
+		if e == len(events):
+			result += events[e]
+		else:
+			result += events[e]+','					
+	return result
+
 def getFSLengthTwo(freqSeq):
 	result = dict()
 	for i in freqSeq.keys():
@@ -236,6 +250,7 @@ if len(sys.argv) >= 3:
 try:
 	freqSeq = open(seqFile, encoding='utf-8')
 	seqs = getFreqSeq(freqSeq)
+	events = getEvents(seqs)
 	if mapping:
 		log = open(logFile, encoding='utf-8')
 		logName, events, traces = getTraces(log)
@@ -266,24 +281,24 @@ else:
 	
 try:
 	smth = ""
-	if maximal:
-		smth = "_max"
-	elif closed:
-		smth = "_closed"
-	elif mapping:
-		smth = "_map"
-	if subString:
-		smth+="_subStr"
-
-	outName = logName + smth + "_alpha" + ".txt"
-	alphaInput = open(outName,'wt',encoding='utf-8')
-	
-	
 	result = dict()
 	if mapping:
+		smth = logName+"_map_alpha"
 		result = traces
 	else:
+		if maximal:
+			smth = "_max"
+		elif closed:
+			smth = "_closed"
+		if subString:
+			smth+="_subStr"
+		
+		smth+= seqFile.strip('.rqes')
+		logName = seqFile.strip('.rqes')
 		result = seqs
+				
+	outName = "log" + smth + ".txt"
+	alphaInput = open(outName,'wt',encoding='utf-8')
 		
 	alphaInput.write(events+'\n') # first line: a,b,c, etc
 	alphaInput.write(logName+'=[') # Lsomething=[
@@ -291,7 +306,7 @@ try:
 		trace = "("
 		for j in range(len(result[i])):
 			if j == len(result[i])-1:
-				if i == len(result.keys()):
+				if i == len(result.keys())-1:
 					trace+=result[i][j]+')'
 				else:
 					trace+=result[i][j]+'), '
