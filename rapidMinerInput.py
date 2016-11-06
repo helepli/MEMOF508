@@ -6,7 +6,9 @@
 # L7=[(a,c)2, (a,b,c)3, (a,b,b,c)2, (a,b,b,b,b,c)1]
 
 import sys  
-              
+
+multiset = False 
+             
 if len(sys.argv)<2:
 	print("This program needs a log.txt file as parameter")
 	exit()
@@ -21,7 +23,12 @@ try:
 	print("Log content: ")
 	print(logContent)
 	logName = logContent[0] # L7
-	sets = logContent[1].strip('][').split(', ') # ['(a,c)2','(a,b,c)3','(a,b,b,c)2','(a,b,b,b,b,c)1']
+	
+	sets = logContent[1].strip('][').split(', ') # ['(a,c)','(a,c)','(a,b,c)','(a,b,c)','(a,b,c)', etc.] or 
+												 # ['(a,c)2','(a,b,c)3','(a,b,b,c)2','(a,b,b,b,b,c)1'] (multiset notation)
+	
+		
+	
 except IOError:
 	print ("Error: can\'t find file or read content!")
 else:
@@ -34,16 +41,35 @@ try:
 	events = events.split(';') # events = ['a','b','c']
 	nbrEvents = len(events)
 	
-	traceID = 0
-	for setID in range (len(sets)): # ex : (a,c)2
-		seti = sets[setID].strip('(').split(')') # ['a,c', '2']
-		transactions = seti[0].split(',') # traces = ['a','c']
-		for i in range (int(seti[1])):
-			traceID += 1
-			for tID in range (len(transactions)):
+	if multiset: # ex : "(a,c)2"
+		seqID = 0
+		for setID in range (len(sets)): 
+			seti = sets[setID].strip('(').split(')') # ['a,c', '2']
+			tr = seti[0].split(',') # traces = ['a','c']
+			for i in range (int(seti[1])):
+				seqID += 1
+				for tID in range (len(tr)):
+					binary = ''
+					for e in range(nbrEvents):
+						if tr[tID] == events[e]:
+							if e == nbrEvents-1:
+								binary+='1'
+							else:
+								binary+='1;'
+						else:
+							if e == nbrEvents-1:
+								binary+='0'
+							else:
+								binary+='0;'
+					GSPinput.write('trace'+str(seqID)+';'+str(tID)+';'+binary+'\n') 
+		
+	else: # sets[ID] = "(a,c)"
+		for setID in range (len(sets)):
+			tr = sets[setID].strip('()').split(',')
+			for t in range(len(tr)):
 				binary = ''
 				for e in range(nbrEvents):
-					if transactions[tID] == events[e]:
+					if tr[t] == events[e]:
 						if e == nbrEvents-1:
 							binary+='1'
 						else:
@@ -53,8 +79,8 @@ try:
 							binary+='0'
 						else:
 							binary+='0;'
+				GSPinput.write('trace'+str(setID)+';'+str(t)+';'+binary+'\n')		
 				
-				GSPinput.write('trace'+str(traceID)+';'+str(tID)+';'+binary+'\n') 
 except IOError:
 	print ("Error: can\'t create or write in output file!")
 else:
