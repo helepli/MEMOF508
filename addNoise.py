@@ -5,9 +5,9 @@ from random import randint
 
 class AddNoise:
 	
-	def __init__(self, logFile, noisePercentage, noiseType, artificialEvents):
+	def __init__(self, logFile, noisePercentage, artificialEvents):
 		self.percentage = noisePercentage # the percentage of traces that will be impacted by noise
-		self.noiseType = noiseType # removeEvent, addEvent, removeHead/Body, swapEvents
+		#self.noiseType = noiseType # removeEvents, addEvents, swapEvents
 		self.artificial = artificialEvents # list of events sepcified by the user that are not in the original log, infrequent events
 		
 		self.logName = ""
@@ -15,10 +15,11 @@ class AddNoise:
 		
 		self.events = []
 		
-		self.isMultiset = False # depends of the format of the log: if it's in multiset notation (number of occurrence of a trace next to it)
+		self.isMultiset = True # depends of the format of the log: if it's in multiset notation (number of occurrence of a trace next to it)
 								# to be changed manually
 		self.parse(logFile)
-		self.nbTraces = round(len(self.traces.keys())*noisePercentage)
+		self.impacted = [False for i in range(len(self.traces.keys()))]
+		self.nbTraces = round((round(len(self.traces.keys())*noisePercentage))/3) # this might not be very serious science
 		self.addNoise()
 		self.write()
 		
@@ -86,119 +87,89 @@ class AddNoise:
 
 			
 	def addNoise(self):
-		if noiseType == "removeEvent":
-			self.logName+="_remove"
-			self.removeEvent()
-		elif noiseType == "addEvent":
-			self.logName+="_add"
-			self.addEvent()
+		self.logName+="_swap_add_remove"
+		self.removeEvents()
+		self.addEvents()
+		self.swapEvents()
+		#~ if noiseType == "removeEvent":
+			#~ self.logName+="_remove"
+			#~ self.removeEvent()
+		#~ elif noiseType == "addEvent":
+			#~ self.logName+="_add"
+			#~ self.addEvent()
 		#~ elif noiseType == "removeHead":
 			#~ self.removeHead()
 		#~ elif noiseType == "removeBody":
 			#~ self.removeBody()
-		elif noiseType == "swapEvents":
-			self.logName+="_swap"
-			self.swapEvents()
-		else:
-			print("This type of noise ya talkin' about is unknown to me, my fwend.")
+		#~ elif noiseType == "swapEvents":
+			#~ self.logName+="_swap"
+			#~ self.swapEvents()
+		#~ else:
+			#~ print("This type of noise ya talkin' about is unknown to me, my fwend.")
 
-	def removeEvent(self):
+	def removeEvents(self):
 		timesToKill = self.nbTraces
-		toBeRemoved = []
-		sens = 1
 		while timesToKill > 0:
-			for i in self.traces.keys():
-				sens = -sens
-				backward = len(self.traces.keys())-1-i
-				coin = round(uniform(0,1))
-				if coin == 1 and timesToKill > 0:
-					dirty = False
-					if sens == -1:
-						index = backward
-					else:
-						index = i
-					for j in range(len(self.traces[index])):
-						if dirty:
-							break
-						secondCoin = round(uniform(0,1))
-						if secondCoin == 1:
-							toBeRemoved.append(self.traces[index][j])
-							dirty = True
-							timesToKill -= 1
-					for event in toBeRemoved:
-						self.traces[index].remove(event)
-						toBeRemoved = []
+			index = randint(0,len(self.traces.keys())-1)
+			if not self.impacted[index]:
+				indexJ = randint(0,len(self.traces[index])-1)
+				self.traces[index].remove(self.traces[index][indexJ])
+				
+				self.impacted[index] = True
+				timesToKill -= 1
 		print("After slaying some innocent events:")
 		print(self.traces)
 		
-	def addEvent(self):
+	def addEvents(self):
 		toBeAdded = list(self.events)
 		if len(self.artificial) > 0:
 			toBeAdded.extend(self.artificial)
 		timesToKill = self.nbTraces
-		sens = 1
 		while timesToKill > 0:
-			for i in self.traces.keys():
-				sens = -sens
-				backward = len(self.traces.keys())-1-i
-				coin = round(uniform(0,1))
-				if coin == 1 and timesToKill > 0:
-					dirty = False
-					if sens == -1:
-						index = backward
-					else:
-						index = i
-					for j in range(len(self.traces[index])):
-						if dirty:
-							break
-						secondCoin = round(uniform(0,1))
-						if secondCoin == 1:
-							event = toBeAdded[randint(0,len(toBeAdded)-1)]
-							self.traces[index].insert(j, event)
-							if (event in self.artificial) and (event not in self.events):
-								self.events.append(event)
-							dirty = True
-							timesToKill -= 1
+			index = randint(0,len(self.traces.keys())-1)
+			if not self.impacted[index]:
+				indexJ = randint(0,len(self.traces[index])-1)
+				event = toBeAdded[randint(0,len(toBeAdded)-1)]
+				self.traces[index].insert(indexJ, event)
+				if (event in self.artificial) and (event not in self.events):
+					self.events.append(event)
+				self.impacted[index] = True
+				timesToKill -= 1
 		print("After adding some events that have nohing to do there:")
 		print(self.traces)
 		
 	def swapEvents(self):
 		timesToKill = self.nbTraces
-		sens = 1
 		while timesToKill > 0:
 			for i in self.traces.keys():
-				sens = -sens
-				backward = len(self.traces.keys())-1-i
 				coin = round(uniform(0,1))
 				if coin == 1 and timesToKill > 0:
 					dirty = False
-					if sens == -1:
-						index = backward
-					else:
-						index = i
+					index = randint(0,len(self.traces.keys())-1)
 					for j in range(len(self.traces[index])-1):
-						if dirty:
+						if dirty or self.impacted[index]:
 							break
 						secondCoin = round(uniform(0,1))
 						if secondCoin == 1:
 							self.traces[index][j], self.traces[index][j+1] = self.traces[index][j+1], self.traces[index][j]
 							dirty = True
+							self.impacted[index] = True
 							timesToKill -= 1
 		print("After randomly swapping two consecutive events in some traces:")
 		print(self.traces)
 
 if __name__ == "__main__":
-	if len(sys.argv) < 4:
-		print("This program needs a log.txt file as parameter, the noise percentage (a float) and the noise type \n(removeEvent, addEvent, removeHead, removeBody, swapEvents).\nIf the noise type is addEvent, you may specify artificial events, separated by comas (ex: a,b,c,d)")
+	if len(sys.argv) < 3:
+		print("This program needs a log.txt file as parameter and the noise percentage (a float).\nYou may specify artificial events, separated by comas (ex: a,b,c,d), for the addEvents function")
 		exit()
 	else:
 		logFile = sys.argv[1]
 		noisePercentage = float(sys.argv[2]) # between zero and one
-		noiseType = sys.argv[3]
+		#noiseType = sys.argv[3]
 		artificialEvents = []
-		if noiseType == "addEvent":
-			if len(sys.argv) == 5:
-				artificialEvents = sys.argv[4].split(',')
+		#if noiseType == "addEvent":
+		if len(sys.argv) == 4:
+			artificialEvents = sys.argv[3].split(',')
 				
-		noiseMaker = AddNoise(logFile, noisePercentage, noiseType, artificialEvents)
+		noiseMaker = AddNoise(logFile, noisePercentage, artificialEvents)
 		
