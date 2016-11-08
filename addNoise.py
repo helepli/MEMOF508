@@ -60,7 +60,7 @@ class AddNoise:
 	
 	def write(self):
 		try:
-			output = open(self.logName+"_noisy.txt",'wt',encoding='utf-8')
+			output = open(self.logName+'_noisy'+str(self.percentage)+'.txt','wt',encoding='utf-8')
 			header = ','.join(self.events)		
 			output.write(header+'\n') # first line: a,b,c, etc
 			output.write(self.logName+'=[') # Lsomething=[	
@@ -87,7 +87,7 @@ class AddNoise:
 
 			
 	def addNoise(self):
-		self.logName+="_swap_add_remove"
+		
 		self.removeEvents()
 		self.addEvents()
 		self.swapEvents()

@@ -1,6 +1,0 @@
-traceID;eventID 
-t0;a
-t0;b
-t0;c
-t0;b
-t0;d

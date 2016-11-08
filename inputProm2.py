@@ -3,7 +3,7 @@ import sys
 class InputProm:
 	
 	def __init__(self, seqFile, logFile):
-		self.logName = logFile
+		self.logName = ""
 		self.traces = []
 		self.unfreqParallelTraces = []
 		self.sequences = []
@@ -106,7 +106,7 @@ class InputProm:
 		logContent = log.readline().strip().split('=') # L7=[(a,c)2, (a,b,c)3, (a,b,b,c)2, (a,b,b,b,b,c)1]
 		print("logContent ")
 		print(logContent)
-		#self.logName = logContent[0] # L7
+		self.logName = logContent[0]+"_inAlpha.txt" # L7
 		sets = logContent[1].strip('][').split(', ') # ['(a,c)2','(a,b,c)3','(a,b,b,c)2','(a,b,b,b,b,c)1']
 		if self.multiset:
 			for i in range(len(sets)):

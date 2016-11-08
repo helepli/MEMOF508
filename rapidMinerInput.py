@@ -36,7 +36,7 @@ else:
 	log.close()
 
 try:
-	GSPinput = open(logName+'.txt','wt',encoding='utf-8')
+	GSPinput = open(logName+'_GSPinput.txt','wt',encoding='utf-8')
 	GSPinput.write('customerID;timestamp;'+events+ '\n')
 	events = events.split(';') # events = ['a','b','c']
 	nbrEvents = len(events)
