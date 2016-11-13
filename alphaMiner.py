@@ -5,7 +5,7 @@ class AlphaMiner:
 	
 	def __init__(self, logFile):
 		self.logName = ""
-		self.traces = dict()
+		self.traces = []
 		self.events = dict()
 		self.Ti = []   # startEvents
 		self.To = []   # endEvents
@@ -17,6 +17,10 @@ class AlphaMiner:
 		
 		self.getStartAndEnd()
 		self.makeFootprint()
+		self.alphaAlgorithm()
+		self.addDependencies()
+		self.writeGraphviz()
+
 		
 	def parse(self, logFile):
 		try:
@@ -29,7 +33,7 @@ class AlphaMiner:
 			self.logName = logContent[0] # L7
 			sets = logContent[1].strip('][').split(', ') # ['(a,c)','(a,b,c)','(a,b,b,c)','(a,b,b,b,b,c)']
 			for i in range(len(sets)):
-				self.traces[i] = sets[i].strip('()').split(',') # traces[1] = ['a', 'c']
+				self.traces.append(sets[i].strip('()').split(',')) # traces[1] = ['a', 'c']
 			print("traces: ")
 			print(self.traces)
 		except IOError:
@@ -48,7 +52,7 @@ class AlphaMiner:
 	def getStartAndEnd(self):
 		resultTi = set()
 		resultTo = set()
-		for i in self.traces.keys():
+		for i in range(len(self.traces)):
 			resultTi.add(self.traces[i][0])
 			resultTo.add(self.traces[i][len(self.traces[i])-1])
 		self.Ti = list(resultTi)
@@ -59,7 +63,7 @@ class AlphaMiner:
 		print(self.To)
 		
 	def makeFootprint(self): # here is all the fun
-		for i in self.traces.keys():
+		for i in range(len(self.traces)):
 			lenTrace = len(self.traces[i])-1
 			for j in range(lenTrace): 
 				a = self.events[self.traces[i][j]]
@@ -156,6 +160,78 @@ class AlphaMiner:
 			if a not in B:
 				isIn = False
 		return isIn
+		
+	def addDependencies(self):
+		temp = list(self.Yl)
+		result = list(self.Yl)
+		for i in range(len(self.Yl)):
+			for j in range(i+1, len(self.Yl)):
+				if self.Yl[i][0] == self.Yl[j][1]:
+					for e in range(len(self.Yl[j][0])):
+						for o in range(len(self.Yl[i][1])):
+							candidate = []
+							candidate.append(self.Yl[j][0][e])
+							candidate.append(self.Yl[i][0][0])
+							candidate.append(self.Yl[i][1][o])
+							print("candidate")
+							print(candidate)
+							if not self.isInSet(self.traces, candidate):
+								newPlace = []
+								newPlace.append([self.Yl[j][0][e]])
+								left = self.exceptOne(temp[i][1], self.Yl[i][1][o])
+								newPlace.append(left)
+								if not newPlace in result:
+									print("newPlace")
+									print(newPlace)
+									result.append(newPlace)
+				if self.Yl[i][1] == self.Yl[j][0]:
+					for e in range(len(self.Yl[i][0])):
+						for o in range(len(self.Yl[j][1])):
+							candidate = []
+							candidate.append(self.Yl[i][0][e])
+							candidate.append(self.Yl[i][1][0])
+							candidate.append(self.Yl[j][1][o])
+							print("candidate")
+							print(candidate)
+							if not self.isInSet(self.traces, candidate):
+								newPlace = []
+								newPlace.append([self.Yl[i][0][e]])
+								left = self.exceptOne(temp[j][1], self.Yl[j][1][o])
+								newPlace.append(left)
+								if not newPlace in result:
+									print("newPlace")
+									print(newPlace)
+									result.append(newPlace)
+					
+		self.Yl = list(result)
+		print("After adding some extra dependencies:")
+		print(self.Yl)				
+		
+	def exceptOne(self, lst, one):
+		result = list(lst)
+		for i in result:
+			if i == one:
+				result.remove(one)
+		return result	
+		
+	def isInSet(self, aSet, seq): # check if a sequence is a subsequence of another sequence in a dictionary
+		isIn = False
+		i = 0
+		while not isIn and i < len(aSet):
+			isIn = self.contains(aSet[i], seq)
+			i+=1
+		return isIn
+	
+	def contains(self, lst, sublst): # returns if a list is a sublist of another list
+		result = []
+		j = 0
+		for i in range(len(lst)):
+			if lst[i] == sublst[j]:
+				result.append(sublst[j])
+				j += 1
+			if j == len(sublst):
+				break
+		return result == sublst
 			
 		
 	def getPowerSet(self, eventsList):
@@ -247,6 +323,4 @@ if __name__ == "__main__":
 	else:
 		logFile = sys.argv[1]
 		processMiner = AlphaMiner(logFile)
-		processMiner.alphaAlgorithm()
-		processMiner.writeGraphviz()
-
+		

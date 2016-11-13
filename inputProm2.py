@@ -5,6 +5,9 @@ class InputProm:
 	def __init__(self, seqFile, logFile):
 		self.logName = ""
 		self.traces = []
+		self.rawSetOfTraces = []
+		self.frequencies = [] # nb of occurrences of a trace in the log
+		self.minsup = 0
 		self.unfreqParallelTraces = []
 		self.sequences = []
 		self.events = ""
@@ -12,10 +15,11 @@ class InputProm:
 		
 		self.multiset = False # is the log in multiset notation?
 		self.parse(seqFile, logFile)
+		self.getMinsup()
 		
 		if self.mapping:
 			self.removeNoise()
-			self.addDependencies()
+			#self.addDependencies()
 	
 		self.write() 
 		
@@ -85,8 +89,8 @@ class InputProm:
 			j+=1
 			line = freqSeq.readline().strip()
 			
-		print("Frequent sequences : ")	
-		print(self.sequences)
+		#print("Frequent sequences : ")	
+		#print(self.sequences)
 
 	def getEvents(self, lstOflsts): # first line of output log, used in write function
 		evnts = set()
@@ -104,29 +108,82 @@ class InputProm:
 		#events = log.readline().strip() # a,b,c  -> should be done after removing the noise and stuff
 		_ = log.readline() # osef for now
 		logContent = log.readline().strip().split('=') # L7=[(a,c)2, (a,b,c)3, (a,b,b,c)2, (a,b,b,b,b,c)1]
-		print("logContent ")
-		print(logContent)
+		#print("logContent ")
+		#print(logContent)
 		self.logName = logContent[0]+"_inAlpha.txt" # L7
 		sets = logContent[1].strip('][').split(', ') # ['(a,c)2','(a,b,c)3','(a,b,b,c)2','(a,b,b,b,b,c)1']
 		if self.multiset:
 			for i in range(len(sets)):
 				sets[i] = sets[i].split(')') # sets[i] = ['(ac', '2']
-				sets[i] = sets[i][0].strip('(').split(',') # sets[i] = ['a', 'c']
-				self.traces.append([i])	
+				self.occurrences.append(int(sets[i][1]))
+				sets[i][0] = sets[i][0].strip('(').split(',') # sets[i] = ['a', 'c']
+				self.traces.append(sets[i][0])	
 		else:
 			for i in range(len(sets)):
 				self.traces.append(sets[i].strip('()').split(','))# traces[1] = ['a', 'c']
+			self.rawSetOfTraces = list(self.traces)
+			self.getRepresentatives()
+			self.getFrequenciesOfTraces()
 				
 		print("Traces: ")
 		print(self.traces)
+		print(len(self.traces))
+		print(len(self.rawSetOfTraces))
+	
+	def getFrequenciesOfTraces(self):
+		for i in range(len(self.traces)):
+			counter = 0
+			for j in range(len(self.rawSetOfTraces)):
+				if self.traces[i] == self.rawSetOfTraces[j]:
+					counter += 1
+			self.frequencies.append(counter)
+		print(self.frequencies)
+		print(len(self.frequencies))
+				
+		
+	def getRepresentatives(self):
+		representatives = []
+		i = 0
+		representatives.append(self.traces[i])
+		one = self.traces[i]
+		while i < (len(self.traces)):
+			if one != self.traces[i] and not self.traces[i] in representatives: 
+				representatives.append(self.traces[i])
+				one = self.traces[i]
+			i+=1
+		self.traces = list(representatives)		
+		
+	def getMinsup(self):
+		for i in range (len(self.traces)):
+			print(self.traces[i])
+			print(self.frequencies[i])
+		x = len(self.rawSetOfTraces)
+		y = len(self.traces)
+		self.minsup = round(x*0.10) 
+		#self.minsup = round(x*0.09) # n the case of L4
+		self.minsup = round(x*0.06) # L2
+		print("minsup : ")
+		print(self.minsup)
 		
 	def removeNoise(self):
-		self.getMapping()
-		self.getRidOfGaps()
-		self.checkPerTwo()
-		self.getMaximalOnes()
-		self.keepOnlyOne()
+		#~ self.getMapping()
+		#~ self.getRidOfGaps()
+		#~ self.checkPerTwo()
+		#~ self.getMaximalOnes()
+		#self.keepOnlyOne()
+		
+		self.getFrequentTraces()
 
+
+	def getFrequentTraces(self):
+		frequentTraces = []
+		for i in range(len(self.traces)):
+			if self.frequencies[i] >= self.minsup:
+				frequentTraces.append(self.traces[i])
+				
+		self.traces = list(frequentTraces)
+		print("After removing infrequent sequences: ")
+		print(self.traces)
 		
 	def getMapping(self):
 		result = []
@@ -183,24 +240,26 @@ class InputProm:
 				if self.containsSubseq(self.traces[j], self.traces[i]) and len(self.traces[i]) < len(self.traces[j]) and not (self.traces[i] in toBeRemoved): 
 					toBeRemoved.append(self.traces[i])
 					
-		print(toBeRemoved)
+		
 		self.traces = [trace for trace in self.traces if trace not in toBeRemoved]
 		print("traces left after removing non maximal ones: ")
 		print(self.traces)
+		print("Removed non maximal traces")
+		print(toBeRemoved)
 		
-	def keepOnlyOne(self):
-		representatives = []
-		i = 0
-		representatives.append(self.traces[i])
-		one = self.traces[i]
-		while i < (len(self.traces)):
-			if one != self.traces[i] and not self.isInSet(representatives, self.traces[i]): 
-				representatives.append(self.traces[i])
-				one = self.traces[i]
-			i+=1
-		self.traces = list(representatives)
-		print("Representatives: ")			
-		print(representatives)
+	#~ def keepOnlyOne(self):
+		#~ representatives = []
+		#~ i = 0
+		#~ representatives.append(self.traces[i])
+		#~ one = self.traces[i]
+		#~ while i < (len(self.traces)):
+			#~ if one != self.traces[i] and not self.isInSet(representatives, self.traces[i]): 
+				#~ representatives.append(self.traces[i])
+				#~ one = self.traces[i]
+			#~ i+=1
+		#~ self.traces = list(representatives)
+		#~ print("Representatives: ")			
+		#~ print(representatives)
 		
 
 	def isInSet(self, aSet, seq): # check if a sequence is a subsequence of another sequence in a dictionary
@@ -239,19 +298,30 @@ class InputProm:
 						if self.traces[i][g] == self.traces[j][h]:
 							candidate1 = self.traces[i][0:g]
 							candidate1.extend(self.traces[j][h:len(self.traces[j])+1])
+							print("candidate1: ")
+							print(candidate1)
 							candidate2 = self.traces[j][0:h]
 							candidate2.extend(self.traces[i][g:len(self.traces[i])+1])
+							print("candidate2: ")
+							print(candidate2)
+							print(self.traces[i][g])
 							if (not candidate1 in self.traces) or (not candidate2 in self.traces):
 								newbie1 = self.traces[i][0:g]
 								newbie1.extend(self.traces[i][g+1:len(self.traces[i])+1])
 								newbie2 = self.traces[j][0:h]
 								newbie2.extend(self.traces[j][h+1:len(self.traces[j])+1])
 								if newbie1 == newbie2 and not newbie1 in result:
+									print("Only this trace in appended: ")
+									print(newbie1)
 									result.append(newbie1)
 								else:
 									if not newbie1 in result:
+										print("This trace in appended: ")
+										print(newbie1)
 										result.append(newbie1)
 									if not newbie2 in result:
+										print("And this trace: ")
+										print(newbie2)
 										result.append(newbie2)
 					g+=1
 		self.traces = list(result)

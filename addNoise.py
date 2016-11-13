@@ -19,7 +19,8 @@ class AddNoise:
 								# to be changed manually
 		self.parse(logFile)
 		self.impacted = [False for i in range(len(self.traces.keys()))]
-		self.nbTraces = round((round(len(self.traces.keys())*noisePercentage))/3) # this might not be very serious science
+		self.nbTraces = round((round(len(self.traces.keys())*noisePercentage))/2) # this might not be very serious science 
+																					#!!!! to be divided by the number of types of noise
 		self.addNoise()
 		self.write()
 		
@@ -88,7 +89,7 @@ class AddNoise:
 			
 	def addNoise(self):
 		
-		self.removeEvents()
+		#self.removeEvents()
 		self.addEvents()
 		self.swapEvents()
 		#~ if noiseType == "removeEvent":
