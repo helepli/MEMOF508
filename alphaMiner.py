@@ -11,11 +11,14 @@ class AlphaMiner:
 		self.To = []   # endEvents
 		self.Xl = []   # places
 		self.Yl = []   # maximal places
+		
+		self.LLOs = []
 
 		self.parse(logFile)
 		self.footprint = [['#' for i in range(len(self.events))] for j in range(len(self.events))] # nothing is connected yet
 		
-		self.getStartAndEnd()
+		
+		
 		self.makeFootprint()
 		self.alphaAlgorithm()
 		self.addDependencies()
@@ -62,6 +65,31 @@ class AlphaMiner:
 		print("end events: ")
 		print(self.To)
 		
+	def getLLOs(self):
+		toBeRemoved = []
+		for i in range(len(self.traces)):
+			for j in range(len(self.traces[i])-1):	
+				if self.traces[i][j] == self.traces[i][j+1]: # a b b c
+					h = j
+					while self.traces[i][h] == self.traces[i][j]: # traces now look like: a c
+						toBeRemoved.append(self.traces[i][h])
+						h+=1
+					candidate = [self.traces[i][j-1], self.traces[i][j], self.traces[i][h]] # a, b, c
+					for item in toBeRemoved:
+						self.traces[i].remove(item)
+					toBeRemoved = []
+					if candidate not in self.LLOs:
+						self.LLOs.append(candidate)
+					break
+		print("LLOOOOOOOs")
+		print(self.LLOs)
+		
+	def isInLLO(self, place):
+		for loop in self.LLOs:
+			if place[0][0] == loop[0] and place[1][0] == loop[2]:
+				return loop
+		return -1
+		
 	def makeFootprint(self): # here is all the fun
 		for i in range(len(self.traces)):
 			lenTrace = len(self.traces[i])-1
@@ -102,9 +130,13 @@ class AlphaMiner:
 		return True		
 		
 	def alphaAlgorithm(self):
+		
+		self.getStartAndEnd()
+		
+		self.getLLOs()
+		
 		eventsList = self.events.keys()
 		powerSet = self.getPowerSet(eventsList)
-		
 		
 		for i in range(len(powerSet)):
 			A = powerSet[i]
@@ -115,6 +147,9 @@ class AlphaMiner:
 					self.Xl.append(place)
 		print("Raw set of places: ")
 		print(self.Xl)
+		
+		#self.putBackLLOs()
+		
 		self.getMaximalPlaces()
 		print("Maximal set of places: ")
 		print(self.Yl)
@@ -230,7 +265,7 @@ class AlphaMiner:
 				powerSet.append(list(subset))
 		return powerSet
 	
-	def writePlace(self,placeName, place, model):
+	def writePlace(self,placeName, place, model, loop = None):
 		if len(place[0]) == 1:
 			model.write(place[0][0]+' -> '+placeName+'\n')	#(a,b) -> place		
 		else:
@@ -242,6 +277,9 @@ class AlphaMiner:
 					events+=place[0][i]+" " 
 			model.write('{'+events+'} -> '+placeName+'\n')
 			
+		if loop != None:
+			model.write(placeName+' -> '+loop[1]+'\n')	#place -> (c)
+			model.write(loop[1]+' -> '+placeName+'\n')	#(a,b) -> place	
 				
 		if len(place[1]) == 1:
 			model.write(placeName+' -> '+place[1][0]+'\n')	#place -> (c)
@@ -285,7 +323,11 @@ class AlphaMiner:
 			i = 0
 			for place in self.Yl:
 				print(place)
-				self.writePlace(places[i], place, model)
+				loop = self.isInLLO(place)
+				if loop != -1:
+					self.writePlace(places[i], place, model, loop)
+				else:
+					self.writePlace(places[i], place, model)
 				i+=1
 
 			if len(self.To) == 1:
