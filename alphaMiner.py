@@ -162,59 +162,48 @@ class AlphaMiner:
 		return isIn
 		
 	def addDependencies(self):
-		temp = list(self.Yl)
 		result = list(self.Yl)
 		for i in range(len(self.Yl)):
 			for j in range(i+1, len(self.Yl)):
 				if self.Yl[i][0] == self.Yl[j][1]:
-					for e in range(len(self.Yl[j][0])):
-						for o in range(len(self.Yl[i][1])):
-							candidate = []
-							candidate.append(self.Yl[j][0][e])
-							candidate.append(self.Yl[i][0][0])
-							candidate.append(self.Yl[i][1][o])
-							print("candidate")
-							print(candidate)
-							if not self.isInSet(self.traces, candidate):
-								newPlace = []
-								newPlace.append([self.Yl[j][0][e]])
-								left = self.exceptOne(temp[i][1], self.Yl[i][1][o])
-								newPlace.append(left)
-								if not newPlace in result:
-									print("newPlace")
-									print(newPlace)
-									result.append(newPlace)
+					candidates = self.generateCandidates(self.Yl[j], self.Yl[i])
+					for c in range(len(candidates)):
+						if not self.isInSet(self.traces, candidates[c]):
+							result = self.addNewPlaces(candidates, result)
+							break
 				if self.Yl[i][1] == self.Yl[j][0]:
-					for e in range(len(self.Yl[i][0])):
-						for o in range(len(self.Yl[j][1])):
-							candidate = []
-							candidate.append(self.Yl[i][0][e])
-							candidate.append(self.Yl[i][1][0])
-							candidate.append(self.Yl[j][1][o])
-							print("candidate")
-							print(candidate)
-							if not self.isInSet(self.traces, candidate):
-								newPlace = []
-								newPlace.append([self.Yl[i][0][e]])
-								left = self.exceptOne(temp[j][1], self.Yl[j][1][o])
-								newPlace.append(left)
-								if not newPlace in result:
-									print("newPlace")
-									print(newPlace)
-									result.append(newPlace)
+					candidates = self.generateCandidates(self.Yl[i], self.Yl[j])
+					for c in range(len(candidates)):
+						if not self.isInSet(self.traces, candidates[c]):
+							result = self.addNewPlaces(candidates, result)
+							break
 					
 		self.Yl = list(result)
 		print("After adding some extra dependencies:")
 		print(self.Yl)				
 		
-	def exceptOne(self, lst, one):
-		result = list(lst)
-		for i in result:
-			if i == one:
-				result.remove(one)
-		return result	
+	def generateCandidates(self, placei, placej):
+		candidates = []
+		 # Yl[i][1] == Yl[j][0]
+		for i in range(len(placei[0])):
+			for c in range(len(placei[1])):
+				for j in range(len(placej[1])):
+					candidate = [placei[0][i], placei[1][c], placej[1][j]]
+					candidates.append(candidate)					
 		
-	def isInSet(self, aSet, seq): # check if a sequence is a subsequence of another sequence in a dictionary
+		return candidates
+		
+	def addNewPlaces(self, candidates, result):
+		for i in range(len(candidates)):
+			if self.isInSet(self.traces, candidates[i]):
+				newPlace = [[candidates[i][0]], [candidates[i][2]]]
+				if not newPlace in result:
+					print("newPlace")
+					print(newPlace)
+					result.append(newPlace)
+		return result
+		
+	def isInSet(self, aSet, seq): # check if a sequence is a subsequence of another sequence in set of sequences
 		isIn = False
 		i = 0
 		while not isIn and i < len(aSet):
