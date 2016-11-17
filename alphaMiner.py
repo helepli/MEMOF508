@@ -13,6 +13,7 @@ class AlphaMiner:
 		self.Yl = []   # maximal places
 		
 		self.LLOs = []
+		self.LLTwos = True
 
 		self.parse(logFile)
 		self.footprint = [['#' for i in range(len(self.events))] for j in range(len(self.events))] # nothing is connected yet
@@ -102,6 +103,16 @@ class AlphaMiner:
 				elif self.footprint[a][b] == "<": # if a follows b in some other trace
 					self.footprint[a][b] = "||" # '||' = a and b are in parallel
 					self.footprint[b][a] = "||" 
+					
+		if self.LLTwos: # ex a b c b c b c ...b d
+			for i in range(len(self.traces)):
+				for j in range(len(self.traces[i])-2):
+					if self.traces[i][j] == self.traces[i][j+2]:
+						b = self.events[self.traces[i][j]]
+						c = self.events[self.traces[i][j+1]]
+						self.footprint[b][c] = ">" # b is followed by c
+						self.footprint[c][b] = ">" # c is followed by b		
+		
 		print("footprint matrix")
 		print(self.footprint)
 		
