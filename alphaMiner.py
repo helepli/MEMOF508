@@ -70,9 +70,9 @@ class AlphaMiner:
 		toBeRemoved = []
 		for i in range(len(self.traces)):
 			for j in range(len(self.traces[i])-1):	
-				if self.traces[i][j] == self.traces[i][j+1]: # a b b c
+				if self.traces[i][j] == self.traces[i][j+1] and not (j == 0 or j+1 == len(self.traces[i])-1): # a b b c
 					h = j
-					while self.traces[i][h] == self.traces[i][j]: # traces now look like: a c
+					while self.traces[i][h] == self.traces[i][j] and not h == len(self.traces[i])-1: # traces now look like: a c
 						toBeRemoved.append(self.traces[i][h])
 						h+=1
 					candidate = [self.traces[i][j-1], self.traces[i][j], self.traces[i][h]] # a, b, c
@@ -159,8 +159,6 @@ class AlphaMiner:
 		print("Raw set of places: ")
 		print(self.Xl)
 		
-		#self.putBackLLOs()
-		
 		self.getMaximalPlaces()
 		print("Maximal set of places: ")
 		print(self.Yl)
@@ -212,12 +210,14 @@ class AlphaMiner:
 		for i in range(len(self.Yl)):
 			for j in range(i+1, len(self.Yl)):
 				if self.Yl[i][0] == self.Yl[j][1]:
+					print(self.Yl[i]); print(self.Yl[j])
 					candidates = self.generateCandidates(self.Yl[j], self.Yl[i])
 					for c in range(len(candidates)):
 						if not self.isInSet(self.traces, candidates[c]):
 							result = self.addNewPlaces(candidates, result)
 							break
 				if self.Yl[i][1] == self.Yl[j][0]:
+					print(self.Yl[i]); print(self.Yl[j])
 					candidates = self.generateCandidates(self.Yl[i], self.Yl[j])
 					for c in range(len(candidates)):
 						if not self.isInSet(self.traces, candidates[c]):
