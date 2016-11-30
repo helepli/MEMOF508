@@ -91,7 +91,7 @@ class AlphaMiner:
 				return loop
 		return -1
 		
-	def makeFootprint(self): # here is all the fun
+	def makeFootprint(self): # here is all the fun	
 		for i in range(len(self.traces)):
 			lenTrace = len(self.traces[i])-1
 			for j in range(lenTrace): 
