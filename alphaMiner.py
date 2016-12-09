@@ -16,23 +16,30 @@ class AlphaMiner:
 		self.LLTwos = True
 
 		self.parse(logFile)
+		self.getAllEventsFromLog()
+			
 		self.footprint = [['#' for i in range(len(self.events))] for j in range(len(self.events))] # nothing is connected yet
+		self.extendedFootprint = [['#' for i in range(len(self.events))] for j in range(len(self.events))] 
+		self.eventFrequency = [0 for i in range(len(self.events))] 
+		self.appearsIn = dict()
 		
-		
+		self.getLLOs()
 		
 		self.makeFootprint()
+		self.makeExtendedFootprint()
+		self.getEventFrequency()
+		self.fillAppearsInDict()
+		
 		self.alphaAlgorithm()
-		self.addDependencies()
+		#self.addDependencies()
 		self.writeGraphviz()
 
 		
 	def parse(self, logFile):
 		try:
 			log = open(logFile, encoding='utf-8')
-			evnts = log.readline().strip().split(',') # list = ['a','b','c']
-			print("Events present in this log: ")
-			print(evnts)
-			self.makeEventsDict(evnts)
+			evnts = log.readline()
+			
 			logContent = log.readline().strip().split('=') # L7=[(a,c), (a,b,c), (a,b,b,c), (a,b,b,b,b,c)]
 			self.logName = logContent[0] # L7
 			sets = logContent[1].strip('][').split(', ') # ['(a,c)','(a,b,c)','(a,b,b,c)','(a,b,b,b,b,c)']
@@ -40,12 +47,22 @@ class AlphaMiner:
 				self.traces.append(sets[i].strip('()').split(',')) # traces[1] = ['a', 'c']
 			print("traces: ")
 			print(self.traces)
+			
 		except IOError:
 			print ("Error: can\'t find file or read content!")
 			exit()
 		else:
 			print ("Opened and read the file successfully")
 			log.close()
+			
+	def getAllEventsFromLog(self):
+		events = []
+		for i in range(len(self.traces)):
+			for j in range(len(self.traces[i])):
+				if self.traces[i][j] not in events:
+					events.append(self.traces[i][j])
+		print(events)	
+		self.makeEventsDict(events)
 	
 	def makeEventsDict(self, evnts):
 		for i in range(len(evnts)):
@@ -116,6 +133,56 @@ class AlphaMiner:
 		print("footprint matrix")
 		print(self.footprint)
 		
+	def makeExtendedFootprint(self): # indicates if b follows a directly or later in some trace
+		for i in range(len(self.traces)):
+			lenTrace = len(self.traces[i])
+			for j in range(lenTrace): 
+				a = self.events[self.traces[i][j]]
+				for k in range(j+1, lenTrace):
+					b = self.events[self.traces[i][k]]
+					if self.extendedFootprint[a][b] == "#": # '#' = not connected; it's the first time we see this two events next to each other
+						self.extendedFootprint[a][b] = ">>" # '>>' = a is followed directly or indirectly by b
+						self.extendedFootprint[b][a] = "<<" # '<<' = b directly or indirectly follows a
+					elif self.extendedFootprint[a][b] == "<<": # if a follows b in some other trace
+						self.extendedFootprint[a][b] = "||" # '||' = a and b are in parallel
+						self.extendedFootprint[b][a] = "||" 
+					
+		print("extendedFootprint: ")
+		print(self.extendedFootprint)		
+	
+	def getEventFrequency(self):
+		frequencies = [0 for x in range(len(self.events))]
+		for i in range(len(self.traces)):
+			for j in range(len(self.traces[i])): 
+				index_a = self.events[self.traces[i][j]]
+				self.eventFrequency[index_a] += 1
+					
+		print("eventFrequency: ")
+		print(self.eventFrequency)	
+		
+	def isAlwaysWith(self, a, b):
+		indeed = True
+		aIsInTraces = self.appearsIn[a]
+		bIsInTraces = self.appearsIn[b]
+		if len(aIsInTraces) != len(bIsInTraces):
+			return False
+		for trace in aIsInTraces:
+			if trace not in bIsInTraces:
+				indeed = False
+		return indeed
+		
+		
+	def fillAppearsInDict(self):
+		events = self.events.keys()
+		for e in events:
+			self.appearsIn[e] = []
+			for i in range(len(self.traces)):
+				for j in range(len(self.traces[i])):
+					if (e == self.traces[i][j]) and (i not in self.appearsIn[e]):
+						self.appearsIn[e].append(i)
+		print("AppearsIn dict: ")
+		print(self.appearsIn)
+		
 	def areAandBConnected(self, A, B): # A = list of input transitions and B = list of output transitions
 
 		for event in A:
@@ -144,7 +211,7 @@ class AlphaMiner:
 		
 		self.getStartAndEnd()
 		
-		self.getLLOs()
+		#self.getLLOs()
 		
 		eventsList = self.events.keys()
 		powerSet = self.getPowerSet(eventsList)
@@ -210,14 +277,12 @@ class AlphaMiner:
 		for i in range(len(self.Yl)):
 			for j in range(i+1, len(self.Yl)):
 				if self.Yl[i][0] == self.Yl[j][1]:
-					print(self.Yl[i]); print(self.Yl[j])
 					candidates = self.generateCandidates(self.Yl[j], self.Yl[i])
 					for c in range(len(candidates)):
 						if not self.isInSet(self.traces, candidates[c]):
 							result = self.addNewPlaces(candidates, result)
 							break
 				if self.Yl[i][1] == self.Yl[j][0]:
-					print(self.Yl[i]); print(self.Yl[j])
 					candidates = self.generateCandidates(self.Yl[i], self.Yl[j])
 					for c in range(len(candidates)):
 						if not self.isInSet(self.traces, candidates[c]):
@@ -240,13 +305,24 @@ class AlphaMiner:
 		return candidates
 		
 	def addNewPlaces(self, candidates, result):
+		print(candidates)
 		for i in range(len(candidates)):
 			if self.isInSet(self.traces, candidates[i]):
-				newPlace = [[candidates[i][0]], [candidates[i][2]]]
-				if not newPlace in result:
-					print("newPlace")
-					print(newPlace)
-					result.append(newPlace)
+				if self.isAlwaysWith(candidates[i][0], candidates[i][2]): 
+					if not self.isJoint(candidates[i][2]) :  
+						newPlace = [[candidates[i][0]], [candidates[i][2]]]
+						if not newPlace in result:
+							print("newPlace")
+							print(newPlace)
+							result.append(newPlace)
+		return result
+		
+	def isJoint(self, event):
+		result = True
+		for i in range(len(self.Yl)):
+			if event in self.Yl[i][1]:
+				if len(self.Yl[i][1]) > 1:
+					result = False
 		return result
 		
 	def isInSet(self, aSet, seq): # check if a sequence is a subsequence of another sequence in set of sequences
