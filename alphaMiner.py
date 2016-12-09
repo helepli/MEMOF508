@@ -21,7 +21,10 @@ class AlphaMiner:
 		self.footprint = [['#' for i in range(len(self.events))] for j in range(len(self.events))] # nothing is connected yet
 		self.extendedFootprint = [['#' for i in range(len(self.events))] for j in range(len(self.events))] 
 		self.eventFrequency = [0 for i in range(len(self.events))] 
-		self.appearsIn = dict()
+		self.appearsIn = dict() # keys = an event, values = list of indexes of the traces in which the event appears 
+		
+		self.occursWithDict = dict() # keys : an event, for each event : values : a list of events 
+								 # with len(appearsIn[event]) <= len(appearsIn[others in this list])
 		
 		self.getLLOs()
 		
@@ -29,9 +32,10 @@ class AlphaMiner:
 		self.makeExtendedFootprint()
 		self.getEventFrequency()
 		self.fillAppearsInDict()
+		self.fillOccursWithDict()
 		
 		self.alphaAlgorithm()
-		#self.addDependencies()
+		self.addDependencies()
 		self.writeGraphviz()
 
 		
@@ -99,14 +103,60 @@ class AlphaMiner:
 					if candidate not in self.LLOs:
 						self.LLOs.append(candidate)
 					break
+		toBeRemoved = []			
+		loopEvents = []
+		loopContext = []
+		for loop in self.LLOs:
+			loopEvents.append(loop[1])
+			loopContext.append([loop[0], loop[2]])
+		for i in range(len(self.traces)):
+			for j in range(len(self.traces[i])):
+				if self.traces[i][j] in loopEvents and [self.traces[i][j-1], self.traces[i][j+1]] in loopContext:
+					toBeRemoved.append(self.traces[i][j])
+			for item in toBeRemoved:
+				self.traces[i].remove(item)
+			toBeRemoved = []
+		
 		print("LLOOOOOOOs")
 		print(self.LLOs)
+		print("set of traces now: ")
+		print(self.traces)
+		
 		
 	def isInLLO(self, place):
 		for loop in self.LLOs:
 			if place[0][0] == loop[0] and place[1][0] == loop[2]:
 				return loop
 		return -1
+		
+	def isALLOEvent(self, event):
+		result = False
+		for loop in self.LLOs:
+			if event == loop[1]:
+				result = True
+		return result
+		
+	def fillOccursWithDict(self):
+		
+		events = [x for x in self.events.keys()]
+			
+		for i in range(len(events)):
+			if not self.isALLOEvent(events[i]):
+				self.occursWithDict[events[i]] = []
+				for j in range(len(events)):  
+					if events[i] != events[j]:
+						iOccurs = self.appearsIn[events[i]]
+						jOccurs = self.appearsIn[events[j]]
+						if self.AisInB(iOccurs, jOccurs) and events[j] not in self.occursWithDict[events[i]]:  # len(iOccurs) <= len(jOccurs)
+							self.occursWithDict[events[i]].append(events[j])
+		print("occurs with me: ")
+		print(self.occursWithDict)
+		
+				
+	def occursWith(self, event, other):
+		occursWithEvent = self.occursWithDict[event]
+		return (other in occursWithEvent)
+		
 		
 	def makeFootprint(self): # here is all the fun	
 		for i in range(len(self.traces)):
@@ -322,7 +372,9 @@ class AlphaMiner:
 		for i in range(len(self.Yl)):
 			if event in self.Yl[i][1]:
 				if len(self.Yl[i][1]) > 1:
-					result = False
+					for other in self.Yl[i][1]:
+						if other != event and not self.occursWith(event, other) and not self.occursWith(other, event):
+							result = False
 		return result
 		
 	def isInSet(self, aSet, seq): # check if a sequence is a subsequence of another sequence in set of sequences
@@ -330,6 +382,14 @@ class AlphaMiner:
 		i = 0
 		while not isIn and i < len(aSet):
 			isIn = self.contains(aSet[i], seq)
+			i+=1
+		return isIn
+		
+	def isInDict(self, aDict, aList):
+		isIn = False
+		i = 0
+		while not isIn and i < len(aDict.keys()):
+			isIn = self.contains(aDict[i], aList)
 			i+=1
 		return isIn
 	
