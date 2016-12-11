@@ -322,23 +322,31 @@ class AlphaMiner:
 				isIn = False
 		return isIn
 		
+		
+	def addDepRecur(self, end, otherEnd, result):
+		candidates = self.generateCandidates(end, otherEnd)
+		print("candidates")
+		print(candidates)
+		for c in range(len(candidates)):
+			if not self.isInSet(self.traces, candidates[c]):
+				result = self.addNewPlaces(candidates, result)
+				return result
+		for k in range(len(self.Yl)):
+			if otherEnd[1] == self.Yl[k][0]:
+				otherEnd = self.Yl[k]
+				self.addDepRecur(end, otherEnd, result)
+		return result
+		
 	def addDependencies(self):
 		
 		result = list(self.Yl)
 		for i in range(len(self.Yl)):
 			for j in range(i+1, len(self.Yl)):
 				if self.Yl[i][0] == self.Yl[j][1]:
-					candidates = self.generateCandidates(self.Yl[j], self.Yl[i])
-					for c in range(len(candidates)):
-						if not self.isInSet(self.traces, candidates[c]):
-							result = self.addNewPlaces(candidates, result)
-							break
+					result = self.addDepRecur(self.Yl[j], self.Yl[i], result)
+					#break
 				if self.Yl[i][1] == self.Yl[j][0]:
-					candidates = self.generateCandidates(self.Yl[i], self.Yl[j])
-					for c in range(len(candidates)):
-						if not self.isInSet(self.traces, candidates[c]):
-							result = self.addNewPlaces(candidates, result)
-							break
+					result = self.addDepRecur(self.Yl[i], self.Yl[j], result)						
 					
 		self.Yl = list(result)
 		print("After adding some extra dependencies:")
@@ -355,7 +363,6 @@ class AlphaMiner:
 		return candidates
 		
 	def addNewPlaces(self, candidates, result):
-		print(candidates)
 		for i in range(len(candidates)):
 			if self.isInSet(self.traces, candidates[i]):
 				if self.isAlwaysWith(candidates[i][0], candidates[i][1]): 
