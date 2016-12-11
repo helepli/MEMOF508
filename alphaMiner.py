@@ -323,6 +323,7 @@ class AlphaMiner:
 		return isIn
 		
 	def addDependencies(self):
+		
 		result = list(self.Yl)
 		for i in range(len(self.Yl)):
 			for j in range(i+1, len(self.Yl)):
@@ -347,10 +348,9 @@ class AlphaMiner:
 		candidates = []
 		 # Yl[i][1] == Yl[j][0]
 		for i in range(len(placei[0])):
-			for c in range(len(placei[1])):
-				for j in range(len(placej[1])):
-					candidate = [placei[0][i], placei[1][c], placej[1][j]]
-					candidates.append(candidate)					
+			for j in range(len(placej[1])):
+				candidate = [placei[0][i], placej[1][j]]
+				candidates.append(candidate)					
 		
 		return candidates
 		
@@ -358,9 +358,9 @@ class AlphaMiner:
 		print(candidates)
 		for i in range(len(candidates)):
 			if self.isInSet(self.traces, candidates[i]):
-				if self.isAlwaysWith(candidates[i][0], candidates[i][2]): 
-					if not self.isJoint(candidates[i][2]) :  
-						newPlace = [[candidates[i][0]], [candidates[i][2]]]
+				if self.isAlwaysWith(candidates[i][0], candidates[i][1]): 
+					if not self.isJoint(candidates[i][1]) :  
+						newPlace = [[candidates[i][0]], [candidates[i][1]]]
 						if not newPlace in result:
 							print("newPlace")
 							print(newPlace)
@@ -376,6 +376,7 @@ class AlphaMiner:
 						if other != event and not self.occursWith(event, other) and not self.occursWith(other, event):
 							result = False
 		return result
+		
 		
 	def isInSet(self, aSet, seq): # check if a sequence is a subsequence of another sequence in set of sequences
 		isIn = False
