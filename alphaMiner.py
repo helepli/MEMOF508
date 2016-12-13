@@ -34,7 +34,7 @@ class AlphaMiner:
 		self.fillOccursWithDict()
 		
 		self.alphaAlgorithm()
-		self.addDependencies() # implicit dependencies mining
+		#self.addDependencies() # implicit dependencies mining
 		
 		self.writeGraphviz()
 
@@ -42,7 +42,8 @@ class AlphaMiner:
 	def parse(self, logFile):
 		try:
 			log = open(logFile, encoding='utf-8')
-			evnts = log.readline()
+			
+			#evnts = log.readline()
 			
 			logContent = log.readline().strip().split('=') # L7=[(a,c), (a,b,c), (a,b,b,c), (a,b,b,b,b,c)]
 			self.logName = logContent[0] # L7
@@ -125,11 +126,16 @@ class AlphaMiner:
 		print(self.traces)
 		
 		
-	def isInLLO(self, place):
+	def isInLLOs(self, place):
+		loops = []
 		for loop in self.LLOs:
 			if place[0][0] == loop[0] and place[1][0] == loop[2]:
-				return loop
-		return -1
+				if loop not in loops:
+					loops.append(loop)
+		if len(loops)!=0:
+			return loops
+		else:
+			return -1
 		
 	def isALLOEvent(self, event):
 		result = False
@@ -416,7 +422,7 @@ class AlphaMiner:
 				powerSet.append(list(subset))
 		return powerSet
 	
-	def writePlace(self,placeName, place, model, loop = None):
+	def writePlace(self,placeName, place, model, loops = None):
 		if len(place[0]) == 1:
 			model.write(place[0][0]+' -> '+placeName+'\n')	#(a,b) -> place		
 		else:
@@ -428,9 +434,10 @@ class AlphaMiner:
 					events+=place[0][i]+" " 
 			model.write('{'+events+'} -> '+placeName+'\n')
 			
-		if loop != None:
-			model.write(placeName+' -> '+loop[1]+'\n')	#place -> (c)
-			model.write(loop[1]+' -> '+placeName+'\n')	#(a,b) -> place	
+		if loops != None:
+			for loop in loops:
+				model.write(placeName+' -> '+loop[1]+'\n')	#place -> (c)
+				model.write(loop[1]+' -> '+placeName+'\n')	#(a,b) -> place	
 				
 		if len(place[1]) == 1:
 			model.write(placeName+' -> '+place[1][0]+'\n')	#place -> (c)
@@ -474,9 +481,9 @@ class AlphaMiner:
 			i = 0
 			for place in self.Yl:
 				print(place)
-				loop = self.isInLLO(place)
-				if loop != -1:
-					self.writePlace(places[i], place, model, loop)
+				loops = self.isInLLOs(place)
+				if loops != -1:
+					self.writePlace(places[i], place, model, loops)
 				else:
 					self.writePlace(places[i], place, model)
 				i+=1

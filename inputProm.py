@@ -3,12 +3,14 @@ import sys
 
 maximal = False 
 closed = False
+supports = []
 subString = False
 mapping = False
 
+
 def getMaximal(freqSeq):
 	maxLength = 0
-	for i in traces.keys():
+	for i in freqSeq.keys():
 		if maxLength < len(freqSeq[i]):
 			maxLength = len(freqSeq[i])
 	k = maxLength
@@ -79,7 +81,6 @@ def getFreqSeq(freqSeq): # returns a dict containing the frequent sequences (log
 	seqs = dict()
 	seqs[0] = freqSeq.readline().strip().split()
 	if closed:
-		supports = []
 		supports.append(float(seqs[0][2].strip(':')))
 	seqs[0] = seqs[0][3:]
 	for i in range (len(seqs[0])):
@@ -201,8 +202,10 @@ def getMapping(traces, seqs):
 	print("Result of the mapping:")
 	print(result)
 	return result
-		
-    	     
+
+
+				
+       
 if len(sys.argv) < 2:
 	print("This program needs a log.txt file as parameter")
 	exit()
@@ -231,9 +234,9 @@ try:
 		print("After pruning non-maximal sequences: ") 			
 		print(seqs)
 	elif closed:
+		seqs = getClosed(seqs)
 		print("Supports: ")
 		print(supports)
-		seqs = getClosed(seqs)
 		print("After pruning non-closed sequences: ")
 		print(seqs)
 	
@@ -256,22 +259,41 @@ try:
 	if subString:
 		smth+="_subStr"
 
-	outName = "log" + smth + seqFile.strip('.rqes') + ".txt"
-	promInput = open(outName,'wt',encoding='utf-8')
-	promInput.write('traceID;eventID \n')
-	traceID = 0
+	outName = "log" + smth + seqFile.strip('.rqes') 
+	output = open(outName + ".txt",'wt',encoding='utf-8')
 	result = dict()
+	
 	if mapping:
 		result = traces
 	else:
 		result = seqs
+	
+	#for my alpha miner
+	output.write(outName+"=[")
 	for i in result.keys():
+		trace = "("
 		for j in range(len(result[i])):
-			promInput.write('t'+str(traceID)+';'+result[i][j]+'\n')
-		traceID += 1
+			if j == len(result[i])-1:
+				if i == len(result)-1:
+					trace+=result[i][j]+')'
+				else:
+					trace+=result[i][j]+'), '
+			else:
+				trace+=result[i][j]+','
+		output.write(trace)
+	output.write("]")		
+	# end for my alpha miner
+	
+	#~ output.write('traceID;eventID \n')
+	#~ traceID = 0	
+	#~ for i in result.keys():
+		#~ for j in range(len(result[i])):
+			#~ output.write('t'+str(traceID)+';'+result[i][j]+'\n')
+		#~ traceID += 1
+		
 except IOError:
 	print ("Error: can\'t create or write in output file!")
 	exit()
 else:
 	print ("Created and written in the file successfully")
-	promInput.close()
+	output.close()
