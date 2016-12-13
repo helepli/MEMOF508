@@ -318,7 +318,7 @@ class AlphaMiner:
 		return isIn
 		
 		
-	def addDepRecur(self, end, otherEnd, result):
+	def addDepRecur(self, end, otherEnd, result): # recursif implicit dependencies miner, to get dependencies of any distance
 		candidates = self.generateCandidates(end, otherEnd)
 		print("Subtraces generated")
 		print(candidates)
@@ -332,7 +332,7 @@ class AlphaMiner:
 				self.addDepRecur(end, otherEnd, result)
 		return result
 		
-	def addDependencies(self):
+	def addDependencies(self): # implicit dependencies mining, call the recursive function addDepRecur()
 		print("Mining implicit dependencies")
 		result = list(self.Yl)
 		for i in range(len(self.Yl)):
@@ -361,7 +361,7 @@ class AlphaMiner:
 		for i in range(len(candidates)):
 			if self.isInSet(self.traces, candidates[i]):
 				if self.isAlwaysWith(candidates[i][0], candidates[i][1]): 
-					if not self.isJoint(candidates[i][1]) : 
+					if self.isChoice(candidates[i][1]) : 
 						print("The subtrace"), print(candidates[i]), print("is not in the set of traces.")  
 						newPlace = [[candidates[i][0]], [candidates[i][1]]]
 						if not newPlace in result:
@@ -370,14 +370,14 @@ class AlphaMiner:
 							result.append(newPlace)
 		return result
 		
-	def isJoint(self, event):
-		result = True
+	def isChoice(self, event):
+		result = False
 		for i in range(len(self.Yl)):
 			if event in self.Yl[i][1]:
 				if len(self.Yl[i][1]) > 1:
 					for other in self.Yl[i][1]:
 						if other != event and not self.occursWith(event, other) and not self.occursWith(other, event):
-							result = False
+							result = True
 		return result
 		
 		
