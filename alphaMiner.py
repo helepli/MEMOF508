@@ -19,23 +19,23 @@ class AlphaMiner:
 		self.getAllEventsFromLog()
 			
 		self.footprint = [['#' for i in range(len(self.events))] for j in range(len(self.events))] # nothing is connected yet
-		self.extendedFootprint = [['#' for i in range(len(self.events))] for j in range(len(self.events))] 
-		self.eventFrequency = [0 for i in range(len(self.events))] 
+		#self.extendedFootprint = [['#' for i in range(len(self.events))] for j in range(len(self.events))] 
+		#self.eventFrequency = [0 for i in range(len(self.events))] 
 		self.appearsIn = dict() # keys = an event, values = list of indexes of the traces in which the event appears 
-		
 		self.occursWithDict = dict() # keys : an event, for each event : values : a list of events 
 								 # with len(appearsIn[event]) <= len(appearsIn[others in this list])
 		
-		self.getLLOs()
+		self.getLLOs() # LLOs must be removed from the log BEFORE the footprint matrix is built
 		
 		self.makeFootprint()
-		self.makeExtendedFootprint()
-		self.getEventFrequency()
+		#self.makeExtendedFootprint()
+		#self.getEventFrequency()
 		self.fillAppearsInDict()
 		self.fillOccursWithDict()
 		
 		self.alphaAlgorithm()
-		self.addDependencies()
+		self.addDependencies() # implicit dependencies mining
+		
 		self.writeGraphviz()
 
 		
@@ -49,7 +49,7 @@ class AlphaMiner:
 			sets = logContent[1].strip('][').split(', ') # ['(a,c)','(a,b,c)','(a,b,b,c)','(a,b,b,b,b,c)']
 			for i in range(len(sets)):
 				self.traces.append(sets[i].strip('()').split(',')) # traces[1] = ['a', 'c']
-			print("traces: ")
+			print("Traces in the log: ")
 			print(self.traces)
 			
 		except IOError:
@@ -71,8 +71,6 @@ class AlphaMiner:
 	def makeEventsDict(self, evnts):
 		for i in range(len(evnts)):
 			self.events[evnts[i]] = i
-		print("self.events: ")
-		print(self.events)
 		
 	def getStartAndEnd(self):
 		resultTi = set()
@@ -82,9 +80,9 @@ class AlphaMiner:
 			resultTo.add(self.traces[i][len(self.traces[i])-1])
 		self.Ti = list(resultTi)
 		self.To = list(resultTo)
-		print("start events: ")
+		print("Start events: ")
 		print(self.Ti)
-		print("end events: ")
+		print("End events: ")
 		print(self.To)
 		
 	def getLLOs(self):
@@ -105,21 +103,25 @@ class AlphaMiner:
 					break
 		toBeRemoved = []			
 		loopEvents = []
-		loopContext = []
+		loopContext = dict()
+		i = 0
 		for loop in self.LLOs:
 			loopEvents.append(loop[1])
-			loopContext.append([loop[0], loop[2]])
+			loopContext[i] = [loop[0], loop[2]]
+			i+=1
 		for i in range(len(self.traces)):
-			for j in range(len(self.traces[i])):
-				if self.traces[i][j] in loopEvents and [self.traces[i][j-1], self.traces[i][j+1]] in loopContext:
+			for j in range(len(self.traces[i])-1):
+				event = self.traces[i][j]
+				context = [self.traces[i][j-1], self.traces[i][j+1]]
+				if event in loopEvents and context == loopContext[loopEvents.index(event)]:
 					toBeRemoved.append(self.traces[i][j])
 			for item in toBeRemoved:
 				self.traces[i].remove(item)
 			toBeRemoved = []
 		
-		print("LLOOOOOOOs")
+		print("LLOs")
 		print(self.LLOs)
-		print("set of traces now: ")
+		print("Set of traces after removing events involved in LLOs: ")
 		print(self.traces)
 		
 		
@@ -149,7 +151,7 @@ class AlphaMiner:
 						jOccurs = self.appearsIn[events[j]]
 						if self.AisInB(iOccurs, jOccurs) and events[j] not in self.occursWithDict[events[i]]:  # len(iOccurs) <= len(jOccurs)
 							self.occursWithDict[events[i]].append(events[j])
-		print("occurs with me: ")
+		print("OccursWith dictionnary: ")
 		print(self.occursWithDict)
 		
 				
@@ -180,8 +182,15 @@ class AlphaMiner:
 						self.footprint[b][c] = ">" # b is followed by c
 						self.footprint[c][b] = ">" # c is followed by b		
 		
-		print("footprint matrix")
-		print(self.footprint)
+		self.displayFPM()
+		
+	def displayFPM(self):
+		print("Events index in the FP matrix:")
+		print(self.events)
+		print("Footprint matrix:")
+		for i in range(len(self.footprint)):
+			print(self.footprint[i])
+				
 		
 	def makeExtendedFootprint(self): # indicates if b follows a directly or later in some trace
 		for i in range(len(self.traces)):
@@ -291,29 +300,15 @@ class AlphaMiner:
 				if self.AisInB(place1[0], place2[0]) and self.AisInB(place1[1], place2[1]):
 					found = True
 					toBeRemoved.append(place1)
-					#~ if not self.isAlreadyIn(place2, self.Yl):
-						#~ self.Yl.append(place2)
 					break
 				elif self.AisInB(place2[0], place1[0]) and self.AisInB(place2[1], place1[1]): 
 					found = True
 					toBeRemoved.append(place2)
-					#~ if not self.isAlreadyIn(place1, self.Yl):
-						#~ self.Yl.append(place1)
 					break
-				#~ elif j == len(self.Yl)-1 and not found:
-					#~ if not self.isAlreadyIn(place1, self.Yl):
-						#~ self.Yl.append(place1)
 		for place in toBeRemoved:
 			i = self.Yl.index(place)
 			del self.Yl[i]
 				
-						
-	#~ def isAlreadyIn(self, newPlace, setOfPlaces):
-		#~ result = False
-		#~ for place in setOfPlaces:
-			#~ if self.AisInB(place[0], newPlace[0]) and self.AisInB(place[1], newPlace[1]) or self.AisInB(newPlace[0], place[0]) and self.AisInB(newPlace[1], place[1]):
-				#~ result = True
-		#~ return result
 		
 	def AisInB(self, A, B):
 		isIn = True
@@ -325,7 +320,7 @@ class AlphaMiner:
 		
 	def addDepRecur(self, end, otherEnd, result):
 		candidates = self.generateCandidates(end, otherEnd)
-		print("candidates")
+		print("Subtraces generated")
 		print(candidates)
 		for c in range(len(candidates)):
 			if not self.isInSet(self.traces, candidates[c]):
@@ -338,7 +333,7 @@ class AlphaMiner:
 		return result
 		
 	def addDependencies(self):
-		
+		print("Mining implicit dependencies")
 		result = list(self.Yl)
 		for i in range(len(self.Yl)):
 			for j in range(i+1, len(self.Yl)):
@@ -366,10 +361,11 @@ class AlphaMiner:
 		for i in range(len(candidates)):
 			if self.isInSet(self.traces, candidates[i]):
 				if self.isAlwaysWith(candidates[i][0], candidates[i][1]): 
-					if not self.isJoint(candidates[i][1]) :  
+					if not self.isJoint(candidates[i][1]) : 
+						print("The subtrace"), print(candidates[i]), print("is not in the set of traces.")  
 						newPlace = [[candidates[i][0]], [candidates[i][1]]]
 						if not newPlace in result:
-							print("newPlace")
+							print("Place added to the set of places:")
 							print(newPlace)
 							result.append(newPlace)
 		return result
@@ -452,7 +448,7 @@ class AlphaMiner:
 			model = open(self.logName+".dot",'wt',encoding='utf-8')
 			model.write('digraph G \n{\n graph [rankdir = "LR"]\n {\n node [shape=circle style=filled]\n start\n end\n')
 			places = []
-			print("len(self.Yl) "+str(len(self.Yl)))
+			print("Number of places in this model: "+str(len(self.Yl)))
 			for i in range(len(self.Yl)):
 				model.write(' c'+str(i+1)+'\n')
 				places.append('c'+str(i+1))
