@@ -1,6 +1,8 @@
 
 class PetriNet:
 	def __init__(self, pnFile):
+		
+		self.name = pnFile.strip('.dot') 
 
 		self.transitions = [] # list of Transition objects
 		self.transitionNames = []
