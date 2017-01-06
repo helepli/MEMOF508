@@ -11,15 +11,47 @@ class TraceGenerator:
 		self.noisyTrans = ['w', 'x', 'y', 'z']
 		
 		
-	def generateTraces(self, number):
+	def generateTraces(self, number, LLO = False):
 		traces = []
 		for i in range(number):
-			trace = self.generateTrace()
+			if LLO:
+				trace = self.generateTraceLLO()
+			else:
+				trace = self.generateTrace()
 			traces.append(trace)
 			
 		if self.noisy:
 			traces = self.addNoise(traces)
 		return traces
+		
+	def generateTraceLLO(self):
+		trace = []
+		start = self.pn.getPlaceByName("start")
+		start.setToken()
+		
+		endReached = False
+		places = [start]
+		while not endReached:
+			nextPlaces = []
+			nbTokens = len(places)
+			for place in places:	
+				transitions = place.getOutTransitions()	
+				random.shuffle(transitions)
+				for trans in transitions:
+					consume = len(trans.outPlaces)
+					if nbTokens >= consume:
+						result = trans.fire()
+						if result != -1:
+							trace.append(result)
+							nextPlaces.extend(trans.outPlaces)
+							nbTokens -= consume
+			random.shuffle(nextPlaces)
+			places = nextPlaces
+			for place in places:
+				if place.name == "end":
+					endReached = True
+				
+		return trace
 		
 	def generateTrace(self):
 		trace = []
@@ -30,7 +62,7 @@ class TraceGenerator:
 		places = [start]
 		while not endReached:
 			nextPlaces = []
-			for place in places:
+			for place in places:	
 				transitions = place.getOutTransitions()	
 				random.shuffle(transitions)
 				for trans in transitions:
@@ -38,6 +70,7 @@ class TraceGenerator:
 					if result != -1:
 						trace.append(result)
 						nextPlaces.extend(trans.outPlaces)
+		
 			random.shuffle(nextPlaces)
 			places = nextPlaces
 			for place in places:
@@ -88,7 +121,12 @@ if __name__ == "__main__":
 		exit()
 	else:
 		pn = PetriNet(sys.argv[1])
-		traceGen = TraceGenerator(pn, True, 0.2)
-		traces = traceGen.generateTraces(20)
+		
+		#traceGen = TraceGenerator(pn)
+		traceGen = TraceGenerator(pn, True, 0.2) # noise
+		
+		traces = traceGen.generateTraces(20, True) # for L7
+		#traces = traceGen.generateTraces(20)
+		
 		traceGen.write(traces)
 		print(traces)

@@ -22,7 +22,7 @@ class PetriNet:
 		print("Arcs:")	
 		print(self.arcs)
 		self.displayPlaces()
-		
+		#self.displayTransitions()
 		
 
 	def parse(self, pnFile):
@@ -115,7 +115,7 @@ class PetriNet:
 				if trans.name in place.inTrans and place not in trans.outPlaces:
 					trans.setOutputPlaces(place)
 					place.inTransObj.append(trans)
-				elif trans.name in place.outTrans and place not in trans.inPlaces:
+				if trans.name in place.outTrans and place not in trans.inPlaces:
 					trans.setInputPlaces(place)
 					place.outTransObj.append(trans)
 		
