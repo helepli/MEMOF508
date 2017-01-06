@@ -1,6 +1,3 @@
-import sys 
-import random
-import numpy as np
 
 class PetriNet:
 	def __init__(self, pnFile):
@@ -132,31 +129,6 @@ class PetriNet:
 		for place in self.places:
 			place.display()
 			
-			
-	def generateTrace(self):
-		trace = ""
-		start = self.getPlaceByName("start")
-		start.setToken()
-		
-		endReached = False
-		places = [start]
-		while not endReached:
-			nextPlaces = []
-			for place in places:
-				transitions = place.getOutTransitions()	
-				random.shuffle(transitions)
-				for trans in transitions:
-					result = trans.fire()
-					if result != -1:
-						trace += result
-						nextPlaces.extend(trans.outPlaces)
-			random.shuffle(nextPlaces)
-			places = nextPlaces
-			for place in places:
-				if place.name == "end":
-					endReached = True
-				
-		print(trace)
 		
 			
 class Place:
@@ -232,11 +204,5 @@ class Transition:
 			return self.name
 		return -1 
 		
-if __name__ == "__main__":
-	if len(sys.argv) < 2:
-		print("This program needs a .dot petri-net spec file (used by graphviz as well) as parameter")
-		exit()
-	else:
-		pn = PetriNet(sys.argv[1])
-		pn.generateTrace()
+
 		
