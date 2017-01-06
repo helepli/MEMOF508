@@ -3,9 +3,12 @@ import random
 from petrinet import PetriNet
 
 class TraceGenerator:
-	def __init__(self, petriNet, noisy = False):
+	def __init__(self, petriNet, noisy = False, noisePercentage = 0.0):
 		self.pn = petriNet
 		self.noisy = noisy
+		self.p = noisePercentage
+		
+		self.noisyTrans = ['w', 'x', 'y', 'z']
 		
 		
 	def generateTraces(self, number):
@@ -13,11 +16,14 @@ class TraceGenerator:
 		for i in range(number):
 			trace = self.generateTrace()
 			traces.append(trace)
+			
+		if self.noisy:
+			traces = self.addNoise(traces)
 		return traces
 		
 	def generateTrace(self):
-		trace = ""
-		start = pn.getPlaceByName("start")
+		trace = []
+		start = self.pn.getPlaceByName("start")
 		start.setToken()
 		
 		endReached = False
@@ -30,7 +36,7 @@ class TraceGenerator:
 				for trans in transitions:
 					result = trans.fire()
 					if result != -1:
-						trace += result
+						trace.append(result)
 						nextPlaces.extend(trans.outPlaces)
 			random.shuffle(nextPlaces)
 			places = nextPlaces
@@ -39,10 +45,19 @@ class TraceGenerator:
 					endReached = True
 				
 		return trace
+		
+	def addNoise(self, traces):
+		for i in range(len(traces)):
+			for j in range(len(traces[i])):
+				if random.random() < self.p:
+					index = random.randint(0, len(self.noisyTrans)-1)
+					traces[i].insert(j, self.noisyTrans[index])
+		
+		return traces
 
 	def write(self, traces):
 		try:
-			outName = pn.name
+			outName = self.pn.name
 			if self.noisy:
 				outName+='_noisy'
 			output = open(outName + '.txt','wt')
@@ -73,7 +88,7 @@ if __name__ == "__main__":
 		exit()
 	else:
 		pn = PetriNet(sys.argv[1])
-		traceGen = TraceGenerator(pn)
-		traces = traceGen.generateTraces(10)
+		traceGen = TraceGenerator(pn, True, 0.2)
+		traces = traceGen.generateTraces(20)
 		traceGen.write(traces)
 		print(traces)
