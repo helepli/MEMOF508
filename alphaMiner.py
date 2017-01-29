@@ -16,14 +16,17 @@ class AlphaMiner:
 		self.LLTwos = True
 
 		self.parse(logFile)
+		self.addSTARTandENDtransitions()
 		self.getAllEventsFromLog()
+		print("Traces in the log: ")
+		print(self.traces)
 			
 		self.footprint = [['#' for i in range(len(self.events))] for j in range(len(self.events))] # nothing is connected yet
 		#self.extendedFootprint = [['#' for i in range(len(self.events))] for j in range(len(self.events))] 
 		#self.eventFrequency = [0 for i in range(len(self.events))] 
 		self.appearsIn = dict() # keys = an event, values = list of indexes of the traces in which the event appears 
 		self.occursWithDict = dict() # keys : an event, for each event : values : a list of events 
-								 # with len(appearsIn[event]) <= len(appearsIn[others in this list])
+								 # with len(appearsIn[event]) <= len(appearsIn[others in this list]) in the case of an event in a loop
 		
 		self.getLLOs() # LLOs must be removed from the log BEFORE the footprint matrix is built
 		
@@ -34,7 +37,7 @@ class AlphaMiner:
 		self.fillOccursWithDict()
 		
 		self.alphaAlgorithm()
-		#self.addDependencies() # implicit dependencies mining
+		self.addDependencies() # implicit dependencies mining
 		
 		self.writeGraphviz()
 
@@ -50,8 +53,7 @@ class AlphaMiner:
 			sets = logContent[1].strip('][').split(', ') # ['(a,c)','(a,b,c)','(a,b,b,c)','(a,b,b,b,b,c)']
 			for i in range(len(sets)):
 				self.traces.append(sets[i].strip('()').split(',')) # traces[1] = ['a', 'c']
-			print("Traces in the log: ")
-			print(self.traces)
+			
 			
 		except IOError:
 			print ("Error: can\'t find file or read content!")
@@ -68,6 +70,12 @@ class AlphaMiner:
 					events.append(self.traces[i][j])
 		print(events)	
 		self.makeEventsDict(events)
+		
+	def addSTARTandENDtransitions(self):
+		for i in range(len(self.traces)):
+			self.traces[i].insert(0, 'START')
+			self.traces[i].insert(len(self.traces[i]), 'END')
+		
 	
 	def makeEventsDict(self, evnts):
 		for i in range(len(evnts)):
@@ -137,7 +145,7 @@ class AlphaMiner:
 		else:
 			return -1
 		
-	def isALLOEvent(self, event):
+	def isALLOEvent(self, event): # "is a LLO event": return if this event is involved in a loop of length one
 		result = False
 		for loop in self.LLOs:
 			if event == loop[1]:
@@ -456,7 +464,7 @@ class AlphaMiner:
 			model.write('digraph G \n{\n graph [rankdir = "LR"]\n {\n node [shape=circle style=filled]\n start\n end\n')
 			places = []
 			print("Number of places in this model: "+str(len(self.Yl)))
-			for i in range(len(self.Yl)):
+			for i in range(len(self.Yl)): # add 4 places for START and END added transitions
 				model.write(' c'+str(i+1)+'\n')
 				places.append('c'+str(i+1))
 			model.write(' }\n')
@@ -466,17 +474,8 @@ class AlphaMiner:
 				 model.write(activity+'\n')
 			model.write(' }\n')
 			
-			startEvents = ""
-			if len(self.Ti) == 1:
-				model.write('start -> '+self.Ti[0]+'\n') # start -> (a,b)
-			else:
-				endEvents = ""
-				for i in range(len(self.Ti)):
-					if i == len(self.Ti)-1:
-						startEvents+=self.Ti[i]
-					else:
-						startEvents+=self.Ti[i]+" "
-				model.write('start -> {'+startEvents+'}\n')
+			model.write('start -> START \n') 
+		
 			
 			i = 0
 			for place in self.Yl:

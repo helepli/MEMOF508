@@ -62,17 +62,21 @@ class TraceGenerator:
 		places = [start]
 		while not endReached:
 			nextPlaces = []
-			for place in places:	
-				transitions = place.getOutTransitions()	
-				random.shuffle(transitions)
-				for trans in transitions:
-					result = trans.fire()
-					if result != -1:
+			place = places[random.randint(0, len(places)-1)] # choose a place randomly from set of current places
+			transitions = place.getOutTransitions()	
+			random.shuffle(transitions)
+			for trans in transitions:
+				result = trans.fire()
+				if result != -1 :
+					if result != 'START' and result != 'END':
 						trace.append(result)
-						nextPlaces.extend(trans.outPlaces)
+					nextPlaces.extend(trans.outPlaces)
 		
-			random.shuffle(nextPlaces)
-			places = nextPlaces
+			
+			places.remove(place)
+			places.extend(nextPlaces)
+			random.shuffle(places)
+		
 			for place in places:
 				if place.name == "end":
 					endReached = True
@@ -122,11 +126,11 @@ if __name__ == "__main__":
 	else:
 		pn = PetriNet(sys.argv[1])
 		
-		#traceGen = TraceGenerator(pn)
-		traceGen = TraceGenerator(pn, True, 0.2) # noise
+		traceGen = TraceGenerator(pn)
+		#traceGen = TraceGenerator(pn, True, 0.2) # noise
 		
-		traces = traceGen.generateTraces(20, True) # for L7
-		#traces = traceGen.generateTraces(20)
+		#traces = traceGen.generateTraces(20, True) # for L7
+		traces = traceGen.generateTraces(20)
 		
 		traceGen.write(traces)
 		print(traces)
