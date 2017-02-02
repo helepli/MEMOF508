@@ -7,6 +7,7 @@ class DFTable:
 		self.getIndividualFrequencies()
 		
 		#self.miner.events ==> key : event; value : index in dfm matrix
+		# used to compute a DIRECT dependency indicator (stored in the dependency matrix, below) 
 		self.directlyFollowsMatrix = [[0 for i in range(len(self.miner.events))] for j in range(len(self.miner.events))]
 		self.isDirectlyFollowedByMatrix = [[0 for i in range(len(self.miner.events))] for j in range(len(self.miner.events))]
 		self.makeDirectlyFollowingMatrix()
@@ -14,6 +15,10 @@ class DFTable:
 		self.directOrIndirectFollowsMatrix = [[0 for i in range(len(self.miner.events))] for j in range(len(self.miner.events))]
 		self.isDirectlyOrIndirectlyFollowedByMatrix = [[0 for i in range(len(self.miner.events))] for j in range(len(self.miner.events))]
 		self.makeIndirectlyFollowingMatrix()
+		
+		# -> relation approximation ('=>' in heuristic miner)
+		self.dependencyMatrix = [[0 for i in range(len(self.miner.events))] for j in range(len(self.miner.events))]
+		self.computeDependencyMatrix()
 	
 	def getIndividualFrequencies(self):
 		for e in self.miner.events.keys():
@@ -59,9 +64,44 @@ class DFTable:
 		print(self.miner.events)
 		print("is directly or indirectly followed by:")		
 		self.displayMatrix(self.isDirectlyOrIndirectlyFollowedByMatrix)
-		print("directly follows:")
+		print("directly or indirectly follows:")
 		self.displayMatrix(self.directOrIndirectFollowsMatrix)
 		
+	def computeDependencyMatrix(self): # a => b = |a > b| - |b > a| / |a > b| + |b > a| + 1
+		for a in self.miner.events.keys():
+			a_index = self.miner.events[a]
+			for b in self.miner.events.keys():
+				adepb = 0
+				b_index = self.miner.events[b]
+				aisfb = self.isDirectlyFollowedByMatrix[a_index][b_index]
+				bisfa = self.isDirectlyFollowedByMatrix[b_index][a_index]
+				if a != b:
+					num = aisfb - bisfa
+					denom = aisfb + bisfa + 1
+					result = num / float(denom)
+				else: # a => a = |a > a| / |a > a| + 1  (this value will be high for loops of length one)
+					result = aisfb / (aisfb + 1)
+				self.dependencyMatrix[a_index][b_index] = result
+		print("Dependency matrix (a => b):")
+		self.displayMatrix(self.dependencyMatrix)
+	
+	def getDependency(self, a, b):
+		a_index = self.miner.events[a]
+		b_index = self.miner.events[b]
+		return self.dependencyMatrix[a_index][b_index] 
+					
+	def getLLTwoDependency(self, a, b): # special treatment for loops of length two: a => b = |a >> b| - |b >> a| / |a >> b| + |b >> a| + 1
+		result = 0
+		a_index = self.miner.events[a]
+		b_index = self.miner.events[b]
+		aidisfb = isDirectlyOrIndirectlyFollowedByMatrix[a_index][b_index]
+		bidisfa = isDirectlyOrIndirectlyFollowedByMatrix[b_index][a_index]
+		num = aidisfb - bidisfa
+		denom = aidisfb + bidisfa + 1
+		result = num / float(denom)
+		
+		return result
+	
 	def displayMatrix(self, matrix):
 		for i in range(len(matrix)):
 			print(matrix[i])
