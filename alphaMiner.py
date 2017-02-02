@@ -2,6 +2,7 @@ import sys
 from itertools import chain, combinations
 from parser import Parser
 from graphvizWriter import GraphvizWriter
+from dftable import DFTable
 
 class AlphaMiner:
 	
@@ -9,7 +10,7 @@ class AlphaMiner:
 		self.parser = parser
 		self.logName = parser.getLogName()
 		self.traces = parser.getTraces()
-		self.events = dict()
+		self.events = dict() # key = event name; value = index in footprint matrix
 		self.Ti = []   # startEvents
 		self.To = []   # endEvents
 		self.Xl = []   # places
@@ -37,7 +38,6 @@ class AlphaMiner:
 		self.alphaAlgorithm()
 		self.addDependencies() # implicit dependencies mining
 		
-		#self.writeGraphviz()
 
 			
 	def getAllEventsFromLog(self):
@@ -222,17 +222,7 @@ class AlphaMiner:
 					#~ 
 		#~ print("extendedFootprint: ")
 		#~ print(self.extendedFootprint)		
-	#~ 
-	#~ def getEventFrequency(self):
-		#~ frequencies = [0 for x in range(len(self.events))]
-		#~ for i in range(len(self.traces)):
-			#~ for j in range(len(self.traces[i])): 
-				#~ index_a = self.events[self.traces[i][j]]
-				#~ self.eventFrequency[index_a] += 1
-					#~ 
-		#~ print("eventFrequency: ")
-		#~ print(self.eventFrequency)	
-		
+	
 		
 	def areAandBConnected(self, A, B): # A = list of input transitions and B = list of output transitions
 
@@ -417,5 +407,9 @@ if __name__ == "__main__":
 	else:
 		logFile = sys.argv[1]
 		parser = Parser(logFile)
+		
 		processMiner = AlphaMiner(parser)
+		
+		dftable = DFTable(processMiner)
+		
 		graphvizWriter = GraphvizWriter(processMiner)
