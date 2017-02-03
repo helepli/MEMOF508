@@ -22,6 +22,7 @@ class TraceGenerator:
 			
 		if self.noisy:
 			traces = self.addNoise(traces)
+			traces = self.introduceN(traces)
 		return traces
 		
 	def generateTraceLLO(self):
@@ -83,13 +84,20 @@ class TraceGenerator:
 				
 		return trace
 		
-	def addNoise(self, traces):
+	def addNoise(self, traces): # type 1, unfrequent events
 		for i in range(len(traces)):
 			for j in range(len(traces[i])):
 				if random.random() < self.p:
 					index = random.randint(0, len(self.noisyTrans)-1)
 					traces[i].insert(j, self.noisyTrans[index])
 		
+		return traces
+	
+	def introduceN(self, traces): # type two, N is in parallel to the rest
+		index = 0
+		for i in range(len(traces)):
+			index = random.randint(0, len(traces[i])) # returns a position at random
+			traces[i].insert(index, 'N')
 		return traces
 
 	def write(self, traces):
@@ -126,11 +134,11 @@ if __name__ == "__main__":
 	else:
 		pn = PetriNet(sys.argv[1])
 		
-		traceGen = TraceGenerator(pn)
-		#traceGen = TraceGenerator(pn, True, 0.2) # noise
+		#traceGen = TraceGenerator(pn)
+		traceGen = TraceGenerator(pn, True, 0.05) # noise
 		
 		#traces = traceGen.generateTraces(20, True) # for L7
-		traces = traceGen.generateTraces(20)
+		traces = traceGen.generateTraces(1000)
 		
 		traceGen.write(traces)
 		print(traces)
