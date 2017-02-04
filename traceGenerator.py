@@ -21,6 +21,7 @@ class TraceGenerator:
 			traces.append(trace)
 			
 		if self.noisy:
+			traces = self.swapEvents(traces)
 			traces = self.addNoise(traces)
 			traces = self.introduceN(traces)
 		return traces
@@ -87,9 +88,17 @@ class TraceGenerator:
 	def addNoise(self, traces): # type 1, unfrequent events
 		for i in range(len(traces)):
 			for j in range(len(traces[i])):
-				if random.random() < self.p:
+				if random.random() < self.p/float(2):
 					index = random.randint(0, len(self.noisyTrans)-1)
 					traces[i].insert(j, self.noisyTrans[index])
+		
+		return traces
+		
+	def swapEvents(self, traces): # type 1, unfrequent events
+		for i in range(len(traces)):
+			for j in range(len(traces[i])-1):
+				if random.random() < self.p/float(2):
+					traces[i][j], traces[i][j+1] = traces[i][j+1], traces[i][j]
 		
 		return traces
 	

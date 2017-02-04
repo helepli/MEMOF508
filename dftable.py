@@ -7,6 +7,9 @@ class DFTable:
 		self.individualFrequency = dict()
 		self.getIndividualFrequencies()
 		
+		self.OccurrencePercentage = dict() # key = a; value = |a|/#tracess
+		self.getPercentages()
+		
 		#self.miner.events ==> key : event; value : index in dfm matrix
 		# used to compute a DIRECT dependency indicator (stored in the dependency matrix, below) 
 		self.directlyFollowsMatrix = [[0 for i in range(len(self.miner.events))] for j in range(len(self.miner.events))]
@@ -62,6 +65,13 @@ class DFTable:
 		print("Individual event frequnecy: ")
 		print(self.individualFrequency)	
 		
+	def getPercentages(self):
+		for a in self.miner.events.keys():
+			aFreq = self.individualFrequency[a]
+			self.OccurrencePercentage[a] = round(aFreq / float(len(self.miner.traces)), 2)
+		print("Occurrence percentage for each event:")
+		print(self.OccurrencePercentage)
+		
 	def makeDirectlyFollowingMatrix(self): # and isDirectlyFollowedBy matrix
 		for i in range(len(self.miner.traces)):
 			lenTrace = len(self.miner.traces[i])-1
@@ -75,8 +85,8 @@ class DFTable:
 		print(self.miner.events)
 		print("is directly followed by:")		
 		self.displayMatrix(self.isDirectlyFollowedByMatrix)
-		print("directly follows:")
-		self.displayMatrix(self.directlyFollowsMatrix)
+		#~ print("directly follows:")
+		#~ self.displayMatrix(self.directlyFollowsMatrix)
 		
 	def makeIndirectlyFollowingMatrix(self):
 		for i in range(len(self.miner.traces)):
@@ -95,8 +105,8 @@ class DFTable:
 		print(self.miner.events)
 		print("is directly or indirectly followed by:")		
 		self.displayMatrix(self.isDirectlyOrIndirectlyFollowedByMatrix)
-		print("directly or indirectly follows:")
-		self.displayMatrix(self.directOrIndirectFollowsMatrix)
+		#~ print("directly or indirectly follows:")
+		#~ self.displayMatrix(self.directOrIndirectFollowsMatrix)
 		
 	def computeDependencyMatrix(self): # a => b = |a > b| - |b > a| / |a > b| + |b > a| + 1
 		for a in self.miner.events.keys():

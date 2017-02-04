@@ -30,15 +30,17 @@ class AlphaMiner:
 		self.occursWithDict = dict() # keys : an event, for each event : values : a list of events 
 								 # with len(appearsIn[event]) <= len(appearsIn[others in this list]) in the case of an event in a loop
 		
+		
+
+	def doYourStuff(self):
 		self.getLLOs() # !!! LLOs must be removed from the log BEFORE the footprint matrix is built
 		self.makeFootprint()
 		self.fillAppearsInDict()
 		self.fillOccursWithDict()
 		
 		self.alphaAlgorithm()
-		self.addDependencies() # implicit dependencies mining
+		#self.addDependencies() # implicit dependencies mining
 		
-
 			
 	def getAllEventsFromLog(self):
 		events = []
@@ -411,5 +413,6 @@ if __name__ == "__main__":
 		processMiner = AlphaMiner(parser)
 		
 		dftable = DFTable(processMiner)
+		#processMiner.doYourStuff()
 		
-		graphvizWriter = GraphvizWriter(processMiner)
+		#graphvizWriter = GraphvizWriter(processMiner)
