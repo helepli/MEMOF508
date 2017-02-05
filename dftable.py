@@ -4,39 +4,41 @@ class DFTable:
 	def __init__(self, alphaMiner):
 		self.miner = alphaMiner
 		
-		self.individualFrequency = dict()
+		self.individualFrequencies = dict()
 		self.getIndividualFrequencies()
 		
-		self.OccurrencePercentage = dict() # key = a; value = |a|/#tracess
-		self.getPercentages()
+		self.individualPercentages = dict() # key = a; value = |a|/#tracess
+		#self.getPercentages()
 		
 		#self.miner.events ==> key : event; value : index in dfm matrix
 		# used to compute a DIRECT dependency indicator (stored in the dependency matrix, below) 
-		self.directlyFollowsMatrix = [[0 for i in range(len(self.miner.events))] for j in range(len(self.miner.events))]
-		self.isDirectlyFollowedByMatrix = [[0 for i in range(len(self.miner.events))] for j in range(len(self.miner.events))]
-		self.makeDirectlyFollowingMatrix()
+		self.directlyFollowsMatrix = [[]]
+		self.isDirectlyFollowedByMatrix = [[]]
+		#self.makeDirectlyFollowingMatrix()
 		
-		self.directOrIndirectFollowsMatrix = [[0 for i in range(len(self.miner.events))] for j in range(len(self.miner.events))]
-		self.isDirectlyOrIndirectlyFollowedByMatrix = [[0 for i in range(len(self.miner.events))] for j in range(len(self.miner.events))]
-		self.makeIndirectlyFollowingMatrix()
+		self.directOrIndirectFollowsMatrix = [[]]
+		self.isDirectlyOrIndirectlyFollowedByMatrix = [[0]]
+		#self.makeIndirectlyFollowingMatrix()
 		
 		# -> relation approximation ('=>' in heuristic miner)
-		self.dependencyMatrix = [[0 for i in range(len(self.miner.events))] for j in range(len(self.miner.events))]
-		self.computeDependencyMatrix()
+		self.dependencyMatrix = [[]]
+		#self.computeDependencyMatrix()
 		
 		# local metric LM
-		self.LMMatrix = [[0 for i in range(len(self.miner.events))] for j in range(len(self.miner.events))]
-		self.computeLMMatrix()
+		self.LMMatrix = [[]]
+		#self.computeLMMatrix()
 		
 		# global metric GM
-		self.GMMatrix = [[0 for i in range(len(self.miner.events))] for j in range(len(self.miner.events))]
-		self.computeGMMatrix()
+		self.GMMatrix = [[]]
+		#self.computeGMMatrix()
 		
-		# stupid probability of a > b : simply count #times a > b / individual freq of a
-		self.stupidProbaMatrix = [[0 for i in range(len(self.miner.events))] for j in range(len(self.miner.events))]
-		self.computeSPMatrix()
+		# Confidence of a > b :  #times a > b / individual freq of a
+		self.confidenceMatrix = [[]] #[[0 for i in range(len(self.miner.events))] for j in range(len(self.miner.events))]
+		#self.computeConfidenceMatrix()
 		
 	def makeEventsList(self):
+		print("HEEEYYY")
+		print(self.miner.events)
 		events = ["" for i in range(len(self.miner.events))]
 		for e in self.miner.events.keys():
 			events[self.miner.events[e]] = e
@@ -56,23 +58,25 @@ class DFTable:
 	
 	def getIndividualFrequencies(self):
 		for e in self.miner.events.keys():
-			self.individualFrequency[e] = 0
+			self.individualFrequencies[e] = 0
 		for i in range(len(self.miner.traces)):
 			for j in range(len(self.miner.traces[i])): 
 				event = self.miner.traces[i][j]
-				self.individualFrequency[event] += 1
+				self.individualFrequencies[event] += 1
 					
-		print("Individual event frequnecy: ")
-		print(self.individualFrequency)	
+		print("Individual event frequency: ")
+		print(self.individualFrequencies)	
 		
 	def getPercentages(self):
 		for a in self.miner.events.keys():
-			aFreq = self.individualFrequency[a]
-			self.OccurrencePercentage[a] = round(aFreq / float(len(self.miner.traces)), 2)
-		print("Occurrence percentage for each event:")
-		print(self.OccurrencePercentage)
+			aFreq = self.individualFrequencies[a]
+			self.individualPercentages[a] = round(aFreq / float(len(self.miner.traces)), 2)
+		print("Individual percentage for each event:")
+		print(self.individualPercentages)
 		
 	def makeDirectlyFollowingMatrix(self): # and isDirectlyFollowedBy matrix
+		self.isDirectlyFollowedByMatrix = [[0 for i in range(len(self.miner.events))] for j in range(len(self.miner.events))]
+		self.directlyFollowsMatrix = [[0 for i in range(len(self.miner.events))] for j in range(len(self.miner.events))]
 		for i in range(len(self.miner.traces)):
 			lenTrace = len(self.miner.traces[i])-1
 			for j in range(lenTrace): 
@@ -89,6 +93,8 @@ class DFTable:
 		#~ self.displayMatrix(self.directlyFollowsMatrix)
 		
 	def makeIndirectlyFollowingMatrix(self):
+		self.directOrIndirectFollowsMatrix = [[0 for i in range(len(self.miner.events))] for j in range(len(self.miner.events))]
+		self.isDirectlyOrIndirectlyFollowedByMatrix = [[0 for i in range(len(self.miner.events))] for j in range(len(self.miner.events))]
 		for i in range(len(self.miner.traces)):
 			lenTrace = len(self.miner.traces[i])-1
 			for j in range(lenTrace): 
@@ -109,6 +115,7 @@ class DFTable:
 		#~ self.displayMatrix(self.directOrIndirectFollowsMatrix)
 		
 	def computeDependencyMatrix(self): # a => b = |a > b| - |b > a| / |a > b| + |b > a| + 1
+		self.dependencyMatrix = [[0 for i in range(len(self.miner.events))] for j in range(len(self.miner.events))]
 		for a in self.miner.events.keys():
 			a_index = self.miner.events[a]
 			for b in self.miner.events.keys():
@@ -126,9 +133,7 @@ class DFTable:
 		print("Dependency matrix (a => b):")
 		self.displayMatrix(self.dependencyMatrix)
 	
-	def getDependency(self, a, b):
-		a_index = self.miner.events[a]
-		b_index = self.miner.events[b]
+	def getDependency(self, a_index, b_index):
 		return self.dependencyMatrix[a_index][b_index] 
 					
 	def getLLTwoDependency(self, a, b): # special treatment for loops of length two: a => b = |a >> b| - |b >> a| / |a >> b| + |b >> a| + 1
@@ -144,6 +149,7 @@ class DFTable:
 		return result
 	
 	def computeLMMatrix(self): # LM = P - 1.96*sqrt(P*(1-P)/N+1) ; P = |a > b|/N+1 ; N = |a > b| + |b > a|
+		self.LMMatrix = [[0 for i in range(len(self.miner.events))] for j in range(len(self.miner.events))]
 		for a in self.miner.events.keys():
 			a_index = self.miner.events[a]
 			for b in self.miner.events.keys():
@@ -163,15 +169,16 @@ class DFTable:
 		
 		
 	def computeGMMatrix(self): # GM = (|a > b| - |b > a|) * (#traces/|a|*|b|)
+		self.GMMatrix = [[0 for i in range(len(self.miner.events))] for j in range(len(self.miner.events))]
 		nbTraces = len(self.miner.traces)
 		
 		for a in self.miner.events.keys():
 			a_index = self.miner.events[a]
-			aFreq = self.individualFrequency[a] # |a|
+			aFreq = self.individualFrequencies[a] # |a|
 			for b in self.miner.events.keys():
 				result = 0
 				b_index = self.miner.events[b]
-				bFreq = self.individualFrequency[b] # |b|
+				bFreq = self.individualFrequencies[b] # |b|
 				aisfb = self.isDirectlyFollowedByMatrix[a_index][b_index] # |a > b|
 				bisfa = self.isDirectlyFollowedByMatrix[b_index][a_index] # |b > a|
 				
@@ -182,10 +189,12 @@ class DFTable:
 		print("Global metric values (GM):")
 		self.displayMatrix(self.GMMatrix)
 		
-	def computeSPMatrix(self): # compute stupid probability of a > b : count #times a > b / individual freq of a
+	def computeConfidenceMatrix(self): # compute the confidence of a > b : count #times a > b / individual freq of a
+		self.makeDirectlyFollowingMatrix()
+		self.confidenceMatrix = [[0 for i in range(len(self.miner.events))] for j in range(len(self.miner.events))]
 		for a in self.miner.events.keys():
 			a_index = self.miner.events[a]
-			aFreq = self.individualFrequency[a] # |a|
+			aFreq = self.individualFrequencies[a] # |a|
 			for b in self.miner.events.keys():
 				result = 0
 				b_index = self.miner.events[b]
@@ -193,9 +202,10 @@ class DFTable:
 				
 				result = round(aisfb / float(aFreq), 2)
 				
-				self.stupidProbaMatrix[a_index][b_index] = result
+				self.confidenceMatrix[a_index][b_index] = result
 				
-		print("Stupid proba values |a > b| / |a| :")
-		self.displayMatrix(self.stupidProbaMatrix)
+		print("confidence of |a > b| / |a| :")
+		self.displayMatrix(self.confidenceMatrix)
 	
-		
+	def getConfidence(self, a_index, b_index):
+		return self.confidenceMatrix[a_index][b_index] + 0.02 # if this value must be >= 0.1 to be frequent, then 0.09 and 0.08 are accepted

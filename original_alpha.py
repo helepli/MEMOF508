@@ -36,13 +36,11 @@ class AlphaMiner:
 
 	def doYourStuff(self):
 		
-		self.dftable.getPercentages()
-		self.pruneUnfrequentEvents() # removes rare events from log
-		self.makeEventsDict()	
-		
-		
-		self.dftable.computeConfidenceMatrix()	
-		self.dftable.computeDependencyMatrix()
+		#~ self.dftable.getPercentages()
+		#~ self.pruneUnfrequentEvents() # removes rare events from log
+		#~ self.makeEventsDict()	
+		#~ 
+		#~ self.dftable.computeConfidenceMatrix()	
 		
 		
 		self.getLLOs() # !!! LLOs must be removed from the log BEFORE the footprint matrix is built
@@ -51,7 +49,7 @@ class AlphaMiner:
 		self.fillOccursWithDict()
 		
 		self.alphaAlgorithm()
-		self.addDependencies() # implicit dependencies mining
+		#self.addDependencies() # implicit dependencies mining
 		
 			
 	def getAllEventsFromLog(self):
@@ -139,8 +137,8 @@ class AlphaMiner:
 		
 		print("LLOs")
 		print(self.LLOs)
-		#~ print("Set of traces after removing events involved in LLOs: ")
-		#~ print(self.traces)
+		print("Set of traces after removing events involved in LLOs: ")
+		print(self.traces)
 		
 		
 	def isInLLOs(self, place):
@@ -208,10 +206,6 @@ class AlphaMiner:
 		confidenceAB = self.dftable.getConfidence(a, b)
 		return confidenceAB >= 0.1 # confidence value threshold
 		
-	def dependent(self, a, b):
-		dependencyAB = self.dftable.getDependency(a, b)
-		return dependencyAB >= 0.5 # confidence value threshold. If dependent, value close to 1. If || or #, value close to 0
-		
 	def makeFootprint(self): # here is all the fun	
 		self.footprint = [['#' for i in range(len(self.events))] for j in range(len(self.events))]
 		for i in range(len(self.traces)):
@@ -219,17 +213,13 @@ class AlphaMiner:
 			for j in range(lenTrace): 
 				a = self.events[self.traces[i][j]]
 				b = self.events[self.traces[i][j+1]]
-				if self.confident(a, b):
-					if self.footprint[a][b] == "#": # '#' = not connected; it's the first time we see this two events next to each other
-						if self.dependent(a, b):
-							self.footprint[a][b] = ">" # '>' = a is followed by b
-							self.footprint[b][a] = "<" # '<' = b follows a
-						else:
-							self.footprint[a][b] = "||" # '||' = a and b are in parallel
-							self.footprint[b][a] = "||" 
-					elif self.footprint[a][b] == "<": # if a follows b in some other trace
-						self.footprint[a][b] = "||" # '||' = a and b are in parallel
-						self.footprint[b][a] = "||" 
+				#if self.confident(a, b):
+				if self.footprint[a][b] == "#": # '#' = not connected; it's the first time we see this two events next to each other
+					self.footprint[a][b] = ">" # '>' = a is followed by b
+					self.footprint[b][a] = "<" # '<' = b follows a
+				elif self.footprint[a][b] == "<": # if a follows b in some other trace
+					self.footprint[a][b] = "||" # '||' = a and b are in parallel
+					self.footprint[b][a] = "||" 
 					
 		if self.LLTwos: # ex a b c b c b c ...b d
 			for i in range(len(self.traces)):
@@ -456,8 +446,8 @@ if __name__ == "__main__":
 		
 		processMiner = AlphaMiner(parser)
 		
-		dftable = DFTable(processMiner)
-		processMiner.setDFTable(dftable)
+		#~ dftable = DFTable(processMiner)
+		#~ processMiner.setDFTable(dftable)
 		
 		processMiner.doYourStuff()
 		
