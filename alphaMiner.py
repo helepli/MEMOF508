@@ -253,7 +253,7 @@ class AlphaMiner:
 					if self.traces[i][j] == self.traces[i][j+2]: # b_j = b_j+2
 						b = self.events[self.traces[i][j]]
 						c = self.events[self.traces[i][j+1]]
-						if self.confident(b, c) and self.confident(c, b) and self.dependent(b, c): # but not self.dependent(c, b)
+						if self.confident(b, c) and self.confident(c, b) and self.dependent(b, b)and self.dependent(c, c): 
 							self.footprint[b][c] = ">" # b is followed by c
 							self.footprint[c][b] = ">" # c is followed by b		
 		
