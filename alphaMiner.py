@@ -33,16 +33,16 @@ class AlphaMiner:
 								 # with len(appearsIn[event]) <= len(appearsIn[others in this list]) in the case of an event in a loop
 		
 		self.dftable = None
-
+		
 	def doYourStuff(self):
 		
-		self.dftable.getPercentages()
+		self.dftable.getPercentages(self.traces, self.events)
 		self.pruneUnfrequentEvents() # removes rare events from log
-		self.makeEventsDict()	
-		
-		
-		self.dftable.computeConfidenceMatrix()	
-		self.dftable.computeDependencyMatrix()
+				
+		self.dftable.computeConfidenceMatrix(self.events, self.traces)	
+		self.dftable.computeDependencyMatrix(self.events, self.traces)
+		self.dftable.computeLMMatrix(self.events, self.traces)
+		self.dftable.computeGMMatrix(self.events, self.traces)
 		
 		
 		self.getLLOs() # !!! LLOs must be removed from the log BEFORE the footprint matrix is built
@@ -95,6 +95,7 @@ class AlphaMiner:
 		for e in toBeRemoved:
 			self.eventsList.remove(e)
 		self.removeUnfreqEventsFromTraces(toBeRemoved)
+		self.makeEventsDict()
 		
 		
 	def removeUnfreqEventsFromTraces(self, tbr): # tbr = list of events to be removed from traces because unfrequent
@@ -106,19 +107,34 @@ class AlphaMiner:
 	def getLLOs(self):
 		toBeRemoved = []
 		for i in range(len(self.traces)):
-			for j in range(len(self.traces[i])-1):	
-				if self.traces[i][j] == self.traces[i][j+1] and not (j == 0 or j+1 == len(self.traces[i])-1): # a b b c
-					h = j
-					while self.traces[i][h] == self.traces[i][j] and not h == len(self.traces[i])-1: # traces now look like: a c
-						toBeRemoved.append(self.traces[i][h])
-						h+=1
-					candidate = [self.traces[i][j-1], self.traces[i][j], self.traces[i][h]] # a, b, c
-					for item in toBeRemoved:
-						self.traces[i].remove(item)
-					toBeRemoved = []
-					if candidate not in self.LLOs:
-						self.LLOs.append(candidate)
-					break
+			lenTrace = len(self.traces[i])-1
+			for j in range(lenTrace):	
+				if self.traces[i][j] == self.traces[i][j+1] and not (j == 0 or j+1 == len(self.traces[i])-1) : # (a, j=b, j+1=b, c) and b_j != start or b_j+1 != end
+					a = self.events[self.traces[i][j]]
+					b = self.events[self.traces[i][j+1]]
+					if self.confident(a , b):
+						h = j
+						while self.traces[i][h] == self.traces[i][j] and not h == len(self.traces[i])-1: # traces now look like: a c
+							toBeRemoved.append(self.traces[i][h])
+							h+=1
+						candidate = [self.traces[i][j-1], self.traces[i][j], self.traces[i][h]] # a, b, c
+						for item in toBeRemoved:
+							self.traces[i].remove(item)
+						toBeRemoved = []
+						if candidate not in self.LLOs:
+							self.LLOs.append(candidate)
+						break
+					else:
+						self.traces[i].remove(self.traces[i][j+1]) # b b is unfrequent, we let only one occurrence of b, remove the repetition
+						h = j+1
+						while self.traces[i][h] == self.traces[i][j+1] and not h == len(self.traces[i])-1: # traces now look like: a c
+							toBeRemoved.append(self.traces[i][h])
+							h+=1
+						for item in toBeRemoved:
+							self.traces[i].remove(item)
+						toBeRemoved = []
+						break
+						
 		toBeRemoved = []			
 		loopEvents = []
 		loopContext = dict()
@@ -174,8 +190,8 @@ class AlphaMiner:
 						jOccurs = self.appearsIn[events[j]]
 						if self.AisInB(iOccurs, jOccurs) and events[j] not in self.occursWithDict[events[i]]:  # len(iOccurs) <= len(jOccurs)
 							self.occursWithDict[events[i]].append(events[j])
-		print("OccursWith dictionnary: ")
-		print(self.occursWithDict)
+		#~ print("OccursWith dictionnary: ")
+		#~ print(self.occursWithDict)
 		
 				
 	def occursWith(self, event, other):
@@ -190,8 +206,8 @@ class AlphaMiner:
 				for j in range(len(self.traces[i])):
 					if (e == self.traces[i][j]) and (i not in self.appearsIn[e]):
 						self.appearsIn[e].append(i)
-		print("AppearsIn dict: ")
-		print(self.appearsIn)
+		#~ print("AppearsIn dict: ")
+		#~ print(self.appearsIn)
 		
 	def isAlwaysWith(self, a, b):
 		indeed = True
@@ -210,7 +226,7 @@ class AlphaMiner:
 		
 	def dependent(self, a, b):
 		dependencyAB = self.dftable.getDependency(a, b)
-		return dependencyAB >= 0.5 # confidence value threshold. If dependent, value close to 1. If || or #, value close to 0
+		return dependencyAB >= 0.5 # dependency value threshold. If dependent, value close to 1. If || or #, value close to 0
 		
 	def makeFootprint(self): # here is all the fun	
 		self.footprint = [['#' for i in range(len(self.events))] for j in range(len(self.events))]
@@ -234,11 +250,12 @@ class AlphaMiner:
 		if self.LLTwos: # ex a b c b c b c ...b d
 			for i in range(len(self.traces)):
 				for j in range(len(self.traces[i])-2):
-					if self.traces[i][j] == self.traces[i][j+2]:
+					if self.traces[i][j] == self.traces[i][j+2]: # b_j = b_j+2
 						b = self.events[self.traces[i][j]]
 						c = self.events[self.traces[i][j+1]]
-						self.footprint[b][c] = ">" # b is followed by c
-						self.footprint[c][b] = ">" # c is followed by b		
+						if self.confident(b, c) and self.confident(c, b) and self.dependent(b, c): # but not self.dependent(c, b)
+							self.footprint[b][c] = ">" # b is followed by c
+							self.footprint[c][b] = ">" # c is followed by b		
 		
 		self.displayFPM()
 		
@@ -456,7 +473,7 @@ if __name__ == "__main__":
 		
 		processMiner = AlphaMiner(parser)
 		
-		dftable = DFTable(processMiner)
+		dftable = DFTable()
 		processMiner.setDFTable(dftable)
 		
 		processMiner.doYourStuff()
