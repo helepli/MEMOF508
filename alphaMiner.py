@@ -43,6 +43,8 @@ class AlphaMiner:
 		self.dftable.computeDependencyMatrix(self.events, self.traces)
 		self.dftable.computeLMMatrix(self.events, self.traces)
 		self.dftable.computeGMMatrix(self.events, self.traces)
+		if self.LLTwos:
+			self.dftable.makeIndirectlyFollowingMatrix(self.events, self.traces) # used in dependencies for Loops of length two
 		
 		
 		self.getLLOs() # !!! LLOs must be removed from the log BEFORE the footprint matrix is built
@@ -220,12 +222,18 @@ class AlphaMiner:
 				indeed = False
 		return indeed
 		
-	def confident(self, a , b):
-		confidenceAB = self.dftable.getConfidence(a, b)
+	def confident(self, a , b, LLTwo = False):
+		if LLTwo:
+			 confidenceAB = self.dftable.getConfidenceOfLLTwo(self.traces, a, b) # here, a and b are events, not indexes
+		else:
+			confidenceAB = self.dftable.getConfidence(a, b)
 		return confidenceAB >= 0.1 # confidence value threshold
 		
-	def dependent(self, a, b):
-		dependencyAB = self.dftable.getDependency(a, b)
+	def dependent(self, a, b, LLTwo = False):
+		if LLTwo:
+			dependencyAB = self.dftable.getLLTwoDependency(a, b)
+		else:
+			dependencyAB = self.dftable.getDependency(a, b)
 		return dependencyAB >= 0.5 # dependency value threshold. If dependent, value close to 1. If || or #, value close to 0
 		
 	def makeFootprint(self): # here is all the fun	
@@ -253,7 +261,8 @@ class AlphaMiner:
 					if self.traces[i][j] == self.traces[i][j+2]: # b_j = b_j+2
 						b = self.events[self.traces[i][j]]
 						c = self.events[self.traces[i][j+1]]
-						if self.confident(b, c) and self.confident(c, b) and self.dependent(b, b)and self.dependent(c, c): 
+						#if self.confident(b, c) and self.confident(c, b) and self.dependent(b, c, True) :
+						if self.confident(self.traces[i][j], self.traces[i][j+1], True) and self.dependent(b, c, True):
 							self.footprint[b][c] = ">" # b is followed by c
 							self.footprint[c][b] = ">" # c is followed by b		
 		
@@ -266,23 +275,6 @@ class AlphaMiner:
 		for i in range(len(self.footprint)):
 			print(self.footprint[i])
 				
-		
-	#~ def makeExtendedFootprint(self): # indicates if b follows a directly or later in some trace
-		#~ for i in range(len(self.traces)):
-			#~ lenTrace = len(self.traces[i])
-			#~ for j in range(lenTrace): 
-				#~ a = self.events[self.traces[i][j]]
-				#~ for k in range(j+1, lenTrace):
-					#~ b = self.events[self.traces[i][k]]
-					#~ if self.extendedFootprint[a][b] == "#": # '#' = not connected; it's the first time we see this two events next to each other
-						#~ self.extendedFootprint[a][b] = ">>" # '>>' = a is followed directly or indirectly by b
-						#~ self.extendedFootprint[b][a] = "<<" # '<<' = b directly or indirectly follows a
-					#~ elif self.extendedFootprint[a][b] == "<<": # if a follows b in some other trace
-						#~ self.extendedFootprint[a][b] = "||" # '||' = a and b are in parallel
-						#~ self.extendedFootprint[b][a] = "||" 
-					#~ 
-		#~ print("extendedFootprint: ")
-		#~ print(self.extendedFootprint)		
 	
 		
 	def areAandBConnected(self, A, B): # A = list of input transitions and B = list of output transitions

@@ -146,7 +146,7 @@ if __name__ == "__main__":
 		#traceGen = TraceGenerator(pn)
 		traceGen = TraceGenerator(pn, True, 0.05) # noise
 		
-		#traces = traceGen.generateTraces(20, True) # for L7
+		#traces = traceGen.generateTraces(1000, True) # for L7
 		traces = traceGen.generateTraces(1000)
 		
 		traceGen.write(traces)

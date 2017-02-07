@@ -55,12 +55,29 @@ class DFTable:
 		print("Individual event frequency: ")
 		print(self.individualFrequencies)
 		
+	def getIndividualFrequenciesBis(self, traces, eventsDict): # if it is involved in a loop, an event can have an individual percentage > 1
+		# if an event happens 100000 times in one trace, then it will be counted only once as occurrence in tha log
+		individualFrequencies = dict()
+		for e in eventsDict.keys():
+			individualFrequencies[e] = 0
+		for i in range(len(traces)):
+			visited = set()
+			for j in range(len(traces[i])): 
+				event = traces[i][j]
+				if event not in visited:
+					individualFrequencies[event] += 1
+					visited.add(event)
+					
+		print("Individual event frequency BIS: ")
+		print(individualFrequencies)
+		return individualFrequencies
 		
 	def getPercentages(self, traces, eventsDict):
-		self.getIndividualFrequencies(traces, eventsDict)
+		self.getIndividualFrequencies(traces, eventsDict) # not used to prune unfrequent events but in matrices
+		individualFrequencies = self.getIndividualFrequenciesBis(traces, eventsDict)
 		
 		for a in eventsDict.keys():
-			aFreq = self.individualFrequencies[a]
+			aFreq = individualFrequencies[a]
 			self.individualPercentages[a] = round(aFreq / float(len(traces)), 2)
 			
 		print("Individual percentage for each event:")
@@ -89,14 +106,12 @@ class DFTable:
 		self.directOrIndirectFollowsMatrix = [[0 for i in range(len(events))] for j in range(len(events))]
 		self.isDirectlyOrIndirectlyFollowedByMatrix = [[0 for i in range(len(events))] for j in range(len(events))]
 		for i in range(len(traces)):
-			lenTrace = len(traces[i])-1
-			for j in range(lenTrace): 
-				a = events[traces[i][j]]
-				
-				for k in range(j+1, lenTrace):
-					if traces[i][k] == traces[i][j]:
-						break
-					else:
+			visited = set()
+			for j in range(len(traces[i])): 
+				if traces[i][j] not in visited:
+					visited.add(traces[i][j])
+					a = events[traces[i][j]]
+					for k in range(j+1, len(traces[i])):
 						b = events[traces[i][k]]
 						self.isDirectlyOrIndirectlyFollowedByMatrix[a][b] += 1
 						self.directOrIndirectFollowsMatrix[b][a] += 1
@@ -129,13 +144,11 @@ class DFTable:
 	def getDependency(self, a_index, b_index):
 		return self.dependencyMatrix[a_index][b_index] 
 					
-	def getLLTwoDependency(self, a, b, events): # special treatment for loops of length two: a => b = |a >> b| - |b >> a| / |a >> b| + |b >> a| + 1
+	def getLLTwoDependency(self, a_index, b_index): # special treatment for loops of length two: a => b = |a >> b| + |b >> a| / |a >> b| + |b >> a| + 1
 		result = 0
-		a_index = events[a]
-		b_index = events[b]
-		aidisfb = isDirectlyOrIndirectlyFollowedByMatrix[a_index][b_index] # |a >> b|
-		bidisfa = isDirectlyOrIndirectlyFollowedByMatrix[b_index][a_index] # |b >> a|
-		num = aidisfb - bidisfa
+		aidisfb = self.isDirectlyOrIndirectlyFollowedByMatrix[a_index][b_index] # |a >> b|
+		bidisfa = self.isDirectlyOrIndirectlyFollowedByMatrix[b_index][a_index] # |b >> a|
+		num = aidisfb + bidisfa
 		denom = aidisfb + bidisfa + 1
 		result = round(num / float(denom), 2)
 		
@@ -202,3 +215,13 @@ class DFTable:
 	
 	def getConfidence(self, a_index, b_index):
 		return self.confidenceMatrix[a_index][b_index] + 0.02 # if this value must be >= 0.1 to be frequent, then 0.09 and 0.08 are accepted
+
+	def getConfidenceOfLLTwo(self, traces, b, c): # events b, c
+		# counts |b > c > b| / |b|
+		bcb = 0
+		for i in range(len(traces)):
+			for j in range(len(traces[i])-2):
+				if traces[i][j] == b and traces[i][j+1] == c and traces[i][j+2] == b:
+					bcb += 1
+		return round(bcb/float(self.individualFrequencies[b]), 2)
+		
