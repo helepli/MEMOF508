@@ -34,8 +34,8 @@ class DFTable:
 			strEv+="    "+str(events[i])
 		print(strEv)
 		for i in range(len(matrix)):
-			print(events[i], end = "")
-			print(matrix[i])
+			print(events[i],end=" "); print(matrix[i])
+			
 			
 	def makeEventsList(self, eventsDict): # param events = a events dictionary key = event; value = index (in a matrix)
 		eventsList = ["" for i in range(len(eventsDict))]

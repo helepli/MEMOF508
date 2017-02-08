@@ -9,8 +9,8 @@ class Parser:
 
 	def parse(self, logFile):
 		try:
-			log = open(logFile, encoding='utf-8')
-			
+			#log = open(logFile, encoding='utf-8') # python3
+			log = open(logFile) # pypy
 			#evnts = log.readline()
 			
 			logContent = log.readline().strip().split('=') # L7=[(a,c), (a,b,c), (a,b,b,c), (a,b,b,b,b,c)]

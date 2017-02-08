@@ -398,7 +398,9 @@ class AlphaMiner:
 			if self.isInSet(self.traces, candidates[i]):
 				if self.isAlwaysWith(candidates[i][0], candidates[i][1]): 
 					if self.isChoice(candidates[i][1]) : 
-						print("The subtrace"), print(candidates[i]), print("is not in the set of traces.")  
+						print("The subtrace ")
+						print(candidates[i])
+						print(" is not in the set of traces.")  
 						newPlace = [[candidates[i][0]], [candidates[i][1]]]
 						if not newPlace in result:
 							print("Place added to the set of places:")
