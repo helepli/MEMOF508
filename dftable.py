@@ -11,8 +11,10 @@ class DFTable:
 		self.directlyFollowsMatrix = [[]]
 		self.isDirectlyFollowedByMatrix = [[]]
 		
-		self.directOrIndirectFollowsMatrix = [[]]
-		self.isDirectlyOrIndirectlyFollowedByMatrix = [[]]
+		
+		self.isIndirectlyFollowedByMatrix = [[]]
+		#~ self.directOrIndirectFollowsMatrix = [[]]
+		#~ self.isDirectlyOrIndirectlyFollowedByMatrix = [[]]
 		
 		# -> relation approximation ('=>' in heuristic miner)
 		self.dependencyMatrix = [[]]
@@ -102,25 +104,41 @@ class DFTable:
 		#~ print("directly follows:")
 		#~ self.displayMatrix(self.directlyFollowsMatrix)
 		
-	def makeIndirectlyFollowingMatrix(self, events, traces):
-		self.directOrIndirectFollowsMatrix = [[0 for i in range(len(events))] for j in range(len(events))]
-		self.isDirectlyOrIndirectlyFollowedByMatrix = [[0 for i in range(len(events))] for j in range(len(events))]
-		for i in range(len(traces)):
-			visited = set()
-			for j in range(len(traces[i])): 
-				if traces[i][j] not in visited:
-					visited.add(traces[i][j])
-					a = events[traces[i][j]]
-					for k in range(j+1, len(traces[i])):
-						b = events[traces[i][k]]
-						self.isDirectlyOrIndirectlyFollowedByMatrix[a][b] += 1
-						self.directOrIndirectFollowsMatrix[b][a] += 1
-		print("Indexes:")
-		print(events)
-		print("is directly or indirectly followed by:")		
-		self.displayMatrix(self.isDirectlyOrIndirectlyFollowedByMatrix, events)
+	#~ def makeIndirectlyFollowingMatrix(self, events, traces):
+		#~ self.directOrIndirectFollowsMatrix = [[0 for i in range(len(events))] for j in range(len(events))]
+		#~ self.isDirectlyOrIndirectlyFollowedByMatrix = [[0 for i in range(len(events))] for j in range(len(events))]
+		#~ for i in range(len(traces)):
+			#~ visited = set()
+			#~ for j in range(len(traces[i])): 
+				#~ if traces[i][j] not in visited:
+					#~ visited.add(traces[i][j])
+					#~ a = events[traces[i][j]]
+					#~ for k in range(j+1, len(traces[i])):
+						#~ b = events[traces[i][k]]
+						#~ self.isDirectlyOrIndirectlyFollowedByMatrix[a][b] += 1
+						#~ self.directOrIndirectFollowsMatrix[b][a] += 1
+		#~ print("Indexes:")
+		#~ print(events)
+		#~ print("is directly or indirectly followed by:")		
+		#~ self.displayMatrix(self.isDirectlyOrIndirectlyFollowedByMatrix, events)
 		#~ print("directly or indirectly follows:")
 		#~ self.displayMatrix(self.directOrIndirectFollowsMatrix)
+		
+	def makeIndirectlyFollowingMatrix(self, events, traces): # for LLTWOs only: a => b = |a >> b| + |b >> a| / |a >> b| + |b >> a| + 1
+		# where |a >> b| = occurrences of 'aba'
+		self.isIndirectlyFollowedByMatrix = [[0 for i in range(len(events))] for j in range(len(events))]
+		for i in range(len(traces)):
+			for j in range(len(traces[i])-2): 
+				if traces[i][j] == traces[i][j+2]:
+					a = events[traces[i][j]]
+					b = events[traces[i][j+1]]
+					aprime = events[traces[i][j+2]]
+					self.isIndirectlyFollowedByMatrix[a][b] += 1
+		print("Indexes:")
+		print(events)
+		print("is indirectly followed by:")		
+		self.displayMatrix(self.isIndirectlyFollowedByMatrix, events)
+		
 		
 	def computeDependencyMatrix(self, events, traces): # a => b = |a > b| - |b > a| / |a > b| + |b > a| + 1
 		self.dependencyMatrix = [[0 for i in range(len(events))] for j in range(len(events))]
@@ -146,8 +164,8 @@ class DFTable:
 					
 	def getLLTwoDependency(self, a_index, b_index): # special treatment for loops of length two: a => b = |a >> b| + |b >> a| / |a >> b| + |b >> a| + 1
 		result = 0
-		aidisfb = self.isDirectlyOrIndirectlyFollowedByMatrix[a_index][b_index] # |a >> b|
-		bidisfa = self.isDirectlyOrIndirectlyFollowedByMatrix[b_index][a_index] # |b >> a|
+		aidisfb = self.isIndirectlyFollowedByMatrix[a_index][b_index] # |a >> b|
+		bidisfa = self.isIndirectlyFollowedByMatrix[b_index][a_index] # |b >> a|
 		num = aidisfb + bidisfa
 		denom = aidisfb + bidisfa + 1
 		result = round(num / float(denom), 2)

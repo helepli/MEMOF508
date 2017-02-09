@@ -251,9 +251,10 @@ class AlphaMiner:
 						else:
 							self.footprint[a][b] = "||" # '||' = a and b are in parallel
 							self.footprint[b][a] = "||" 
-					elif self.footprint[a][b] == "<": # if a follows b in some other trace
-						self.footprint[a][b] = "||" # '||' = a and b are in parallel
-						self.footprint[b][a] = "||" 
+					#~ elif self.footprint[a][b] == "<": # if a follows b in some other trace
+						
+						#~ self.footprint[a][b] = "||" # '||' = a and b are in parallel
+						#~ self.footprint[b][a] = "||" 
 					
 		if self.LLTwos: # ex a b c b c b c ...b d
 			for i in range(len(self.traces)):
