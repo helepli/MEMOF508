@@ -358,21 +358,29 @@ class AlphaMiner:
 		result = list(self.Yl)
 		for i in range(len(self.Yl)):
 			for j in range(i+1, len(self.Yl)):
-				if self.Yl[i][0] == self.Yl[j][1]:
-					result = self.addDepRecur(self.Yl[j], self.Yl[i], result)
-					#break
-				if self.Yl[i][1] == self.Yl[j][0]:
-					result = self.addDepRecur(self.Yl[i], self.Yl[j], result)						
+				#if self.Yl[i][0] == self.Yl[j][1]:
+				for x in self.Yl[i][0]:
+					for y in self.Yl[j][1]: 
+						if x == y:
+							result = self.addDepRecur(self.Yl[j], self.Yl[i], result)
+							#break
+				#if self.Yl[i][1] == self.Yl[j][0]: # ex: [(a, b), (c)] and [(c), (b,e)]
+				for x in self.Yl[i][1]:
+					for y in self.Yl[j][0]: 
+						if x == y:
+							result = self.addDepRecur(self.Yl[i], self.Yl[j], result)						
 					
 		self.Yl = list(result)
 		print("After adding some extra dependencies:")
 		print(self.Yl)				
 		
 		
-	def addDepRecur(self, end, otherEnd, result): # recursif implicit dependencies miner, to get dependencies of any distance
+	def addDepRecur(self, end, otherEnd, result): # recursive implicit dependencies miner, to get dependencies of any distance
+		# takes two places, "end" and "otherEnd" in parameters. Result is the set of places Yl after (maybe) adding implicit places
+		# ex: end = [(a, b), (c)] and otheEnd = [(c), (b,e)]
 		candidates = self.generateCandidates(end, otherEnd)
 		print("Subtraces generated")
-		print(candidates)
+		print(candidates) # candidates: [[a, e], [a, d], [b, d], [b, e]]
 		for c in range(len(candidates)):
 			if not self.isInSet(self.traces, candidates[c]):
 				result = self.addNewPlaces(candidates, result)
@@ -394,11 +402,12 @@ class AlphaMiner:
 		
 		return candidates
 		
-	def addNewPlaces(self, candidates, result):
+	def addNewPlaces(self, candidates, result):# ex: candidates = [[a, e], [a, d], [b, d], [b, e]]
+		# a is always with d and b is always with e
 		for i in range(len(candidates)):
 			if self.isInSet(self.traces, candidates[i]):
-				if self.isAlwaysWith(candidates[i][0], candidates[i][1]): 
-					if self.isChoice(candidates[i][1]) : 
+				if self.isAlwaysWith(candidates[i][0], candidates[i][1]): # is true for [a, d] and [b, e], not for the other two candidates
+					if self.isChoice(candidates[i][1]) : # ex for [a, d]: d is in the output transitions set of the place [(c), (d,e)]
 						print("The subtrace ")
 						print(candidates[i])
 						print(" is not in the set of traces.")  
@@ -409,13 +418,14 @@ class AlphaMiner:
 							result.append(newPlace)
 		return result
 		
-	def isChoice(self, event):
+	def isChoice(self, event): # ex: event d from candidate [a, d], must be from an output transitions set of a place
+		# ex for [a, d]: d is in the output transitions set of the place [(c), (d,e)]
 		result = False
 		for i in range(len(self.Yl)):
-			if event in self.Yl[i][1]:
-				if len(self.Yl[i][1]) > 1:
-					for other in self.Yl[i][1]:
-						if other != event and not self.occursWith(event, other) and not self.occursWith(other, event):
+			if event in self.Yl[i][1]: # d must be from an output transitions set of a place
+				if len(self.Yl[i][1]) > 1: # d is from the place [(c), (d, e)]
+					for other in self.Yl[i][1]: # the other is e
+						if other != event and not self.occursWith(event, other) and not self.occursWith(other, event): # this "not self.occursWith(other, event)" may not be necessary
 							result = True
 		return result
 		

@@ -28,17 +28,22 @@ class AlphaMiner:
 		print(self.traces)
 			
 		self.footprint = [[]] # nothing is connected yet
+		####
+		#~ self.appearsIn = dict() # keys = an event, values = list of indexes of the traces in which the event appears 
+		#~ self.occursWithDict = dict() # keys : an event, for each event : values : a list of events 
+								 # with len(appearsIn[event]) <= len(appearsIn[others in this list]) in the case of an event in a loop
+		###
 		
 
 	def doYourStuff(self):	
 		
 		self.getLLOs() # !!! LLOs must be removed from the log BEFORE the footprint matrix is built
 		self.makeFootprint()
-		#~ self.fillAppearsInDict()
-		#~ self.fillOccursWithDict()
+		#~ self.fillAppearsInDict() ###
+		#~ self.fillOccursWithDict() ###
 		
 		self.alphaAlgorithm()
-		
+		#~ self.addDependencies() ###
 		
 			
 	def getAllEventsFromLog(self):
@@ -132,7 +137,41 @@ class AlphaMiner:
 			if event == loop[1]:
 				result = True
 		return result	
-				
+	
+	####	
+	#~ def fillOccursWithDict(self):
+		#~ 
+		#~ events = [x for x in self.events.keys()]
+			#~ 
+		#~ for i in range(len(events)):
+			#~ if not self.isALLOEvent(events[i]):
+				#~ self.occursWithDict[events[i]] = []
+				#~ for j in range(len(events)):  
+					#~ if events[i] != events[j]:
+						#~ iOccurs = self.appearsIn[events[i]]
+						#~ jOccurs = self.appearsIn[events[j]]
+						#~ if self.AisInB(iOccurs, jOccurs) and events[j] not in self.occursWithDict[events[i]]:  # len(iOccurs) <= len(jOccurs)
+							#~ self.occursWithDict[events[i]].append(events[j])
+		#~ print("OccursWith dictionnary: ")
+		#~ print(self.occursWithDict)
+		#~ 
+				#~ 
+	#~ def occursWith(self, event, other):
+		#~ occursWithEvent = self.occursWithDict[event]
+		#~ return (other in occursWithEvent)
+		#~ 
+	#~ def fillAppearsInDict(self):
+		#~ events = self.events.keys()
+		#~ for e in events:
+			#~ self.appearsIn[e] = []
+			#~ for i in range(len(self.traces)):
+				#~ for j in range(len(self.traces[i])):
+					#~ if (e == self.traces[i][j]) and (i not in self.appearsIn[e]):
+						#~ self.appearsIn[e].append(i)
+		#~ print("AppearsIn dict: ")
+		#~ print(self.appearsIn)
+		
+	####		
 		
 	def isAlwaysWith(self, a, b):
 		indeed = True
@@ -252,7 +291,7 @@ class AlphaMiner:
 		return isIn
 		
 		
-		
+	###	
 	#~ def addDependencies(self): # implicit dependencies mining, call the recursive function addDepRecur()
 		#~ print("Mining implicit dependencies")
 		#~ result = list(self.Yl)
@@ -316,7 +355,7 @@ class AlphaMiner:
 						#~ if other != event and not self.occursWith(event, other) and not self.occursWith(other, event):
 							#~ result = True
 		#~ return result
-		
+		###
 		
 	def isInSet(self, aSet, seq): # check if a sequence is a subsequence of another sequence in set of sequences
 		isIn = False
