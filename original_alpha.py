@@ -311,20 +311,29 @@ class AlphaMiner:
 		candidates = self.generateCandidates(end, otherEnd)
 		print("Subtraces generated")
 		print(candidates)
+		placeAdded = False
 		
-		for c in range(len(candidates)):
+		c = 0
+		while c < len(candidates):
+			print("candidate c")
+			print(candidates[c])
 			if not self.isInSet(self.traces, candidates[c]):
-				pruned = []
+				outputT = candidates[c][1]
+				inputT = []
 				for k in range(len(candidates)):
-					if self.isInSet(self.traces, candidates[k]):
-						pruned.append(candidates[k])
-				result = self.addNewPlaces(pruned, result)
-				return result
-				
-		for k in range(len(self.Yl)):
-			if otherEnd[1] == self.Yl[k][0]:
-				otherEnd = self.Yl[k]
-				self.addDepRecur(end, otherEnd, result)
+					if self.isInSet(self.traces, candidates[k]) and candidates[k][1] == outputT:
+						inputT.append(candidates[k][0])
+				result = self.addNewPlaces(inputT, outputT, result)
+				placeAdded = True
+			c+=1
+			
+		if placeAdded :
+			return result
+		else:				
+			for k in range(len(self.Yl)):
+				if otherEnd[1] == self.Yl[k][0]:
+					otherEnd = self.Yl[k]
+					self.addDepRecur(end, otherEnd, result)
 		return result		
 		
 		
@@ -338,15 +347,17 @@ class AlphaMiner:
 		
 		return candidates
 		
-	def addNewPlaces(self, candidates, result):
-		for i in range(len(candidates)):
-			if self.isAlwaysWith(candidates[i][0], candidates[i][1]): 
-				if self.isChoice(candidates[i][1]) : 
-					newPlace = [[candidates[i][0]], [candidates[i][1]]]
-					if not newPlace in result:
-						print("Place added to the set of places:")
-						print(newPlace)
-						result.append(newPlace)
+	def addNewPlaces(self, inputT, outputT, result): # inputT, outputT, result. A place must be put before outputT, with all inputTs putting a token in it
+		inputSet = []
+		if self.isChoice(outputT): 
+			for i in range(len(inputT)):
+				#if self.isAlwaysWith(inputT[i], outputT): 
+				inputSet.append(inputT[i])
+			newPlace = [inputSet, [outputT]]
+			if not newPlace in result:
+				print("Place added to the set of places:")
+				print(newPlace)
+				result.append(newPlace)
 		return result
 		
 	def isChoice(self, event):
