@@ -29,8 +29,8 @@ class AlphaMiner:
 			
 		self.footprint = [[]] # nothing is connected yet
 		####
-		#~ self.appearsIn = dict() # keys = an event, values = list of indexes of the traces in which the event appears 
-		#~ self.occursWithDict = dict() # keys : an event, for each event : values : a list of events 
+		self.appearsIn = dict() # keys = an event, values = list of indexes of the traces in which the event appears 
+		self.occursWithDict = dict() # keys : an event, for each event : values : a list of events 
 								 # with len(appearsIn[event]) <= len(appearsIn[others in this list]) in the case of an event in a loop
 		###
 		
@@ -39,11 +39,11 @@ class AlphaMiner:
 		
 		self.getLLOs() # !!! LLOs must be removed from the log BEFORE the footprint matrix is built
 		self.makeFootprint()
-		#~ self.fillAppearsInDict() ###
-		#~ self.fillOccursWithDict() ###
+		self.fillAppearsInDict() ###
+		self.fillOccursWithDict() ###
 		
 		self.alphaAlgorithm()
-		#~ self.addDependencies() ###
+		self.addDependencies() ###
 		
 			
 	def getAllEventsFromLog(self):
@@ -139,37 +139,37 @@ class AlphaMiner:
 		return result	
 	
 	####	
-	#~ def fillOccursWithDict(self):
-		#~ 
-		#~ events = [x for x in self.events.keys()]
-			#~ 
-		#~ for i in range(len(events)):
-			#~ if not self.isALLOEvent(events[i]):
-				#~ self.occursWithDict[events[i]] = []
-				#~ for j in range(len(events)):  
-					#~ if events[i] != events[j]:
-						#~ iOccurs = self.appearsIn[events[i]]
-						#~ jOccurs = self.appearsIn[events[j]]
-						#~ if self.AisInB(iOccurs, jOccurs) and events[j] not in self.occursWithDict[events[i]]:  # len(iOccurs) <= len(jOccurs)
-							#~ self.occursWithDict[events[i]].append(events[j])
-		#~ print("OccursWith dictionnary: ")
-		#~ print(self.occursWithDict)
-		#~ 
-				#~ 
-	#~ def occursWith(self, event, other):
-		#~ occursWithEvent = self.occursWithDict[event]
-		#~ return (other in occursWithEvent)
-		#~ 
-	#~ def fillAppearsInDict(self):
-		#~ events = self.events.keys()
-		#~ for e in events:
-			#~ self.appearsIn[e] = []
-			#~ for i in range(len(self.traces)):
-				#~ for j in range(len(self.traces[i])):
-					#~ if (e == self.traces[i][j]) and (i not in self.appearsIn[e]):
-						#~ self.appearsIn[e].append(i)
-		#~ print("AppearsIn dict: ")
-		#~ print(self.appearsIn)
+	def fillOccursWithDict(self):
+		
+		events = [x for x in self.events.keys()]
+			
+		for i in range(len(events)):
+			if not self.isALLOEvent(events[i]):
+				self.occursWithDict[events[i]] = []
+				for j in range(len(events)):  
+					if events[i] != events[j]:
+						iOccurs = self.appearsIn[events[i]]
+						jOccurs = self.appearsIn[events[j]]
+						if self.AisInB(iOccurs, jOccurs) and events[j] not in self.occursWithDict[events[i]]:  # len(iOccurs) <= len(jOccurs)
+							self.occursWithDict[events[i]].append(events[j])
+		print("OccursWith dictionnary: ")
+		print(self.occursWithDict)
+		
+				
+	def occursWith(self, event, other):
+		occursWithEvent = self.occursWithDict[event]
+		return (other in occursWithEvent)
+		
+	def fillAppearsInDict(self):
+		events = self.events.keys()
+		for e in events:
+			self.appearsIn[e] = []
+			for i in range(len(self.traces)):
+				for j in range(len(self.traces[i])):
+					if (e == self.traces[i][j]) and (i not in self.appearsIn[e]):
+						self.appearsIn[e].append(i)
+		print("AppearsIn dict: ")
+		print(self.appearsIn)
 		
 	####		
 		
@@ -290,73 +290,78 @@ class AlphaMiner:
 				isIn = False
 		return isIn
 		
+	
+	def addDependencies(self): # implicit dependencies mining, call the recursive function addDepRecur()
+		print("Mining implicit dependencies")
+		result = list(self.Yl)
+		for i in range(len(self.Yl)):
+			for j in range(i+1, len(self.Yl)):
+				if self.Yl[i][0] == self.Yl[j][1]:
+					result = self.addDepRecur(self.Yl[j], self.Yl[i], result)
+					#break
+				if self.Yl[i][1] == self.Yl[j][0]:
+					result = self.addDepRecur(self.Yl[i], self.Yl[j], result)						
+					
+		self.Yl = list(result)
+		print("After adding some extra dependencies:")
+		print(self.Yl)				
 		
-	###	
-	#~ def addDependencies(self): # implicit dependencies mining, call the recursive function addDepRecur()
-		#~ print("Mining implicit dependencies")
-		#~ result = list(self.Yl)
-		#~ for i in range(len(self.Yl)):
-			#~ for j in range(i+1, len(self.Yl)):
-				#~ if self.Yl[i][0] == self.Yl[j][1]:
-					#~ result = self.addDepRecur(self.Yl[j], self.Yl[i], result)
-					#~ #break
-				#~ if self.Yl[i][1] == self.Yl[j][0]:
-					#~ result = self.addDepRecur(self.Yl[i], self.Yl[j], result)						
-					#~ 
-		#~ self.Yl = list(result)
-		#~ print("After adding some extra dependencies:")
-		#~ print(self.Yl)				
-		#~ 
-		#~ 
-	#~ def addDepRecur(self, end, otherEnd, result): # recursif implicit dependencies miner, to get dependencies of any distance
-		#~ candidates = self.generateCandidates(end, otherEnd)
-		#~ print("Subtraces generated")
-		#~ print(candidates)
-		#~ for c in range(len(candidates)):
-			#~ if not self.isInSet(self.traces, candidates[c]):
-				#~ result = self.addNewPlaces(candidates, result)
-				#~ return result
-		#~ for k in range(len(self.Yl)):
-			#~ if otherEnd[1] == self.Yl[k][0]:
-				#~ otherEnd = self.Yl[k]
-				#~ self.addDepRecur(end, otherEnd, result)
-		#~ return result		
-		#~ 
-		#~ 
-	#~ def generateCandidates(self, placei, placej):
-		#~ candidates = []
-		 #~ # Yl[i][1] == Yl[j][0]
-		#~ for i in range(len(placei[0])):
-			#~ for j in range(len(placej[1])):
-				#~ candidate = [placei[0][i], placej[1][j]]
-				#~ candidates.append(candidate)					
-		#~ 
-		#~ return candidates
-		#~ 
-	#~ def addNewPlaces(self, candidates, result):
-		#~ for i in range(len(candidates)):
-			#~ if self.isInSet(self.traces, candidates[i]):
-				#~ if self.isAlwaysWith(candidates[i][0], candidates[i][1]): 
-					#~ if self.isChoice(candidates[i][1]) : 
-						#~ print("The subtrace"), print(candidates[i]), print("is not in the set of traces.")  
-						#~ newPlace = [[candidates[i][0]], [candidates[i][1]]]
-						#~ if not newPlace in result:
-							#~ print("Place added to the set of places:")
-							#~ print(newPlace)
-							#~ result.append(newPlace)
-		#~ return result
-		#~ 
-	#~ def isChoice(self, event):
-		#~ result = False
-		#~ for i in range(len(self.Yl)):
-			#~ if event in self.Yl[i][1]:
-				#~ if len(self.Yl[i][1]) > 1:
-					#~ for other in self.Yl[i][1]:
-						#~ if other != event and not self.occursWith(event, other) and not self.occursWith(other, event):
-							#~ result = True
-		#~ return result
-		###
 		
+	def addDepRecur(self, end, otherEnd, result): # recursif implicit dependencies miner, to get dependencies of any distance
+		candidates = self.generateCandidates(end, otherEnd)
+		print("Subtraces generated")
+		print(candidates)
+		
+		for c in range(len(candidates)):
+			if not self.isInSet(self.traces, candidates[c]):
+				pruned = []
+				for k in range(len(candidates)):
+					if self.isInSet(self.traces, candidates[k]):
+						pruned.append(candidates[k])
+				result = self.addNewPlaces(pruned, result)
+				return result
+				
+		for k in range(len(self.Yl)):
+			if otherEnd[1] == self.Yl[k][0]:
+				otherEnd = self.Yl[k]
+				self.addDepRecur(end, otherEnd, result)
+		return result		
+		
+		
+	def generateCandidates(self, placei, placej):
+		candidates = []
+		 # Yl[i][1] == Yl[j][0]
+		for i in range(len(placei[0])):
+			for j in range(len(placej[1])):
+				candidate = [placei[0][i], placej[1][j]]
+				candidates.append(candidate)					
+		
+		return candidates
+		
+	def addNewPlaces(self, candidates, result):
+		for i in range(len(candidates)):
+			if self.isAlwaysWith(candidates[i][0], candidates[i][1]): 
+				if self.isChoice(candidates[i][1]) : 
+					newPlace = [[candidates[i][0]], [candidates[i][1]]]
+					if not newPlace in result:
+						print("Place added to the set of places:")
+						print(newPlace)
+						result.append(newPlace)
+		return result
+		
+	def isChoice(self, event):
+		result = False
+		for i in range(len(self.Yl)):
+			if event in self.Yl[i][1]:
+				if len(self.Yl[i][1]) > 1:
+					for other in self.Yl[i][1]:
+						if other != event and not self.occursWith(event, other) and not self.occursWith(other, event):
+							result = True
+							
+		return result
+	
+	
+	
 	def isInSet(self, aSet, seq): # check if a sequence is a subsequence of another sequence in set of sequences
 		isIn = False
 		i = 0
