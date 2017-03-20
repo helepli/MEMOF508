@@ -173,16 +173,16 @@ class AlphaMiner:
 		
 	####		
 		
-	def isAlwaysWith(self, a, b):
-		indeed = True
-		aIsInTraces = self.appearsIn[a]
-		bIsInTraces = self.appearsIn[b]
-		if len(aIsInTraces) != len(bIsInTraces):
-			return False
-		for trace in aIsInTraces:
-			if trace not in bIsInTraces:
-				indeed = False
-		return indeed
+	#~ def isAlwaysWith(self, a, b): # not necessary
+		#~ indeed = True
+		#~ aIsInTraces = self.appearsIn[a]
+		#~ bIsInTraces = self.appearsIn[b]
+		#~ if len(aIsInTraces) != len(bIsInTraces):
+			#~ return False
+		#~ for trace in aIsInTraces:
+			#~ if trace not in bIsInTraces:
+				#~ indeed = False
+		#~ return indeed
 		
 		
 	def makeFootprint(self): # here is all the fun	
@@ -323,7 +323,7 @@ class AlphaMiner:
 				for k in range(len(candidates)):
 					if self.isInSet(self.traces, candidates[k]) and candidates[k][1] == outputT:
 						inputT.append(candidates[k][0])
-				result = self.addNewPlaces(inputT, outputT, result)
+				result = self.addNewPlaces(inputT, outputT, otherEnd, result)
 				placeAdded = True
 			c+=1
 			
@@ -347,12 +347,11 @@ class AlphaMiner:
 		
 		return candidates
 		
-	def addNewPlaces(self, inputT, outputT, result): # inputT, outputT, result. A place must be put before outputT, with all inputTs putting a token in it
-		inputSet = []
-		if self.isChoice(outputT): 
-			for i in range(len(inputT)):
-				#if self.isAlwaysWith(inputT[i], outputT): 
-				inputSet.append(inputT[i])
+	def addNewPlaces(self, inputT, outputT, place, result): # inputT, outputT, result. A place must be put before outputT, with all inputTs putting a token in it
+		if self.isChoice(outputT, place): 
+			#~ for i in range(len(inputT)):
+				#~ if self.isAlwaysWith(inputT[i], outputT): 
+				#~ inputSet.append(inputT[i])
 			newPlace = [inputSet, [outputT]]
 			if not newPlace in result:
 				print("Place added to the set of places:")
@@ -360,14 +359,19 @@ class AlphaMiner:
 				result.append(newPlace)
 		return result
 		
-	def isChoice(self, event):
+	def isChoice(self, event, place):
 		result = False
-		for i in range(len(self.Yl)):
-			if event in self.Yl[i][1]:
-				if len(self.Yl[i][1]) > 1:
-					for other in self.Yl[i][1]:
-						if other != event and not self.occursWith(event, other) and not self.occursWith(other, event):
-							result = True
+		if len(place[1]) > 1:
+			for other in place[1]:
+				if other != event and not self.occursWith(event, other) and not self.occursWith(other, event):
+					result = True
+			
+		#~ for i in range(len(self.Yl)):
+			#~ if event in self.Yl[i][1]:
+				#~ if len(self.Yl[i][1]) > 1:
+					#~ for other in self.Yl[i][1]:
+						#~ if other != event and not self.occursWith(event, other) and not self.occursWith(other, event):
+							#~ result = True
 							
 		return result
 	
