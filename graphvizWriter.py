@@ -17,7 +17,7 @@ class GraphvizWriter:
 				model.write(' c'+str(i+1)+'\n')
 				places.append('c'+str(i+1))
 			model.write(' }\n')
-			model.write(' {\n node [fontsize=35]\n')
+			model.write(' {\n node [shape=square fontsize=35]\n')
 			
 			for activity in self.miner.events.keys():
 				 model.write(activity+'\n')
