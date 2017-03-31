@@ -311,7 +311,7 @@ class AlphaMiner:
 		candidates = self.generateCandidates(end, otherEnd)
 		print("Subtraces generated")
 		print(candidates)
-		placeAdded = False
+		#placeAdded = False
 		
 		c = 0
 		while c < len(candidates):
@@ -323,17 +323,18 @@ class AlphaMiner:
 				for k in range(len(candidates)):
 					if self.isInSet(self.traces, candidates[k]) and candidates[k][1] == outputT:
 						inputT.append(candidates[k][0])
-				result = self.addNewPlaces(inputT, outputT, otherEnd, result)
-				placeAdded = True
+				if len(inputT) != 0:
+					result = self.addNewPlaces(inputT, outputT, otherEnd, result)
+					#placeAdded = True
 			c+=1
 			
-		if placeAdded :
-			return result
-		else:				
-			for k in range(len(self.Yl)):
-				if otherEnd[1] == self.Yl[k][0]:
-					otherEnd = self.Yl[k]
-					self.addDepRecur(end, otherEnd, result)
+		#~ if placeAdded :
+			#~ return result
+		#~ else:				
+		for k in range(len(self.Yl)):
+			if otherEnd[1] == self.Yl[k][0]:
+				otherEnd = self.Yl[k]
+				self.addDepRecur(end, otherEnd, result)
 		return result		
 		
 		
@@ -352,7 +353,7 @@ class AlphaMiner:
 			#~ for i in range(len(inputT)):
 				#~ if self.isAlwaysWith(inputT[i], outputT): 
 				#~ inputSet.append(inputT[i])
-			newPlace = [inputSet, [outputT]]
+			newPlace = [inputT, [outputT]]
 			if not newPlace in result:
 				print("Place added to the set of places:")
 				print(newPlace)
