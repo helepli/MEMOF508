@@ -1,0 +1,31 @@
+digraph G 
+{
+ graph [rankdir = "LR"]
+ {
+ node [shape=circle style=filled]
+ start
+ end
+ c1
+ c2
+ c3
+ c4
+ }
+ {
+ node [shape=square fontsize=35]
+b
+d
+e
+a
+c
+ }
+start -> a
+a -> c1
+c1 -> {b e}
+a -> c2
+c2 -> {e c}
+{b e} -> c3
+c3 -> d
+{e c} -> c4
+c4 -> d
+d -> end 
+}

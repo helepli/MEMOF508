@@ -9,7 +9,7 @@ class GraphvizWriter:
 	def writeGraphviz(self):
 		try:
 			#model = open(self.miner.logName+".dot",'wt',encoding='utf-8') #python3
-			model = open(self.miner.logName+".dot",'wt') # pypy
+			model = open(self.miner.filename+".dot",'wt') # pypy
 			model.write('digraph G \n{\n graph [rankdir = "LR"]\n {\n node [shape=circle style=filled]\n start\n end\n')
 			places = []
 			print("Number of places in this model: "+str(len(self.miner.Yl)))

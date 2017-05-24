@@ -99,30 +99,9 @@ class DFTable:
 		
 		print("Indexes:")
 		print(events)
-		print("is directly followed by:")		
+		print("'is directly followed by' Table:")		
 		self.displayMatrix(self.isDirectlyFollowedByMatrix, events)
-		#~ print("directly follows:")
-		#~ self.displayMatrix(self.directlyFollowsMatrix)
 		
-	#~ def makeIndirectlyFollowingMatrix(self, events, traces):
-		#~ self.directOrIndirectFollowsMatrix = [[0 for i in range(len(events))] for j in range(len(events))]
-		#~ self.isDirectlyOrIndirectlyFollowedByMatrix = [[0 for i in range(len(events))] for j in range(len(events))]
-		#~ for i in range(len(traces)):
-			#~ visited = set()
-			#~ for j in range(len(traces[i])): 
-				#~ if traces[i][j] not in visited:
-					#~ visited.add(traces[i][j])
-					#~ a = events[traces[i][j]]
-					#~ for k in range(j+1, len(traces[i])):
-						#~ b = events[traces[i][k]]
-						#~ self.isDirectlyOrIndirectlyFollowedByMatrix[a][b] += 1
-						#~ self.directOrIndirectFollowsMatrix[b][a] += 1
-		#~ print("Indexes:")
-		#~ print(events)
-		#~ print("is directly or indirectly followed by:")		
-		#~ self.displayMatrix(self.isDirectlyOrIndirectlyFollowedByMatrix, events)
-		#~ print("directly or indirectly follows:")
-		#~ self.displayMatrix(self.directOrIndirectFollowsMatrix)
 		
 	def makeIndirectlyFollowingMatrix(self, events, traces): # for LLTWOs only: a => b = |a >> b| + |b >> a| / |a >> b| + |b >> a| + 1
 		# where |a >> b| = occurrences of 'aba'
@@ -136,7 +115,7 @@ class DFTable:
 					self.isIndirectlyFollowedByMatrix[a][b] += 1
 		print("Indexes:")
 		print(events)
-		print("is indirectly followed by:")		
+		print("'is indirectly followed by' Table:")		
 		self.displayMatrix(self.isIndirectlyFollowedByMatrix, events)
 		
 		
@@ -188,7 +167,7 @@ class DFTable:
 				
 				self.LMMatrix[a_index][b_index] = result
 				
-		print("Local metric values (LM):")
+		print("Local metric Table (LM):")
 		self.displayMatrix(self.LMMatrix, events)
 		
 		
@@ -210,7 +189,7 @@ class DFTable:
 				
 				self.GMMatrix[a_index][b_index] = result
 				
-		print("Global metric values (GM):")
+		print("Global metric Table (GM):")
 		self.displayMatrix(self.GMMatrix, events)
 		
 	def computeConfidenceMatrix(self, events, traces): # compute the confidence of a > b : count #times a > b / individual freq of a
@@ -228,7 +207,7 @@ class DFTable:
 				
 				self.confidenceMatrix[a_index][b_index] = result
 				
-		print("confidence of |a > b| / |a| :")
+		print("Confidence of |a > b| / |a| Table :")
 		self.displayMatrix(self.confidenceMatrix, events)
 	
 	def getConfidence(self, a_index, b_index):

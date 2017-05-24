@@ -2,7 +2,7 @@
 class PetriNet:
 	def __init__(self, pnFile):
 		
-		self.name = pnFile.strip('.dot') 
+		self.name = pnFile
 
 		self.transitions = [] # list of Transition objects
 		self.transitionNames = []
@@ -44,7 +44,7 @@ class PetriNet:
 			
 			line = log.readline() # {
 			line = log.readline().strip() # node [fontsize=35]
-			if line == "node [fontsize=35]":
+			if line == "node [shape=square fontsize=35]":
 				line = log.readline().strip()
 				while line != "}":
 					self.transitionNames.append(line)

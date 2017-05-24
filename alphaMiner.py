@@ -9,6 +9,7 @@ class AlphaMiner:
 	def __init__(self, parser):
 		self.parser = parser
 		self.logName = parser.getLogName()
+		self.filename = parser.filename
 		self.traces = parser.getTraces()
 		self.eventsList = []
 		self.events = dict() # key = event name; value = index in footprint matrix
@@ -251,19 +252,15 @@ class AlphaMiner:
 						else:
 							self.footprint[a][b] = "||" # '||' = a and b are in parallel
 							self.footprint[b][a] = "||" 
-					#~ elif self.footprint[a][b] == "<": # if a follows b in some other trace
-						
-						#~ self.footprint[a][b] = "||" # '||' = a and b are in parallel
-						#~ self.footprint[b][a] = "||" 
 					
-		if self.LLTwos: # ex a b c b c b c ...b d
+					
+		if self.LLTwos: # loops of length two; ex: a b c b c b c ...b d
 			for i in range(len(self.traces)):
 				for j in range(len(self.traces[i])-2):
 					if self.traces[i][j] == self.traces[i][j+2]: # b_j = b_j+2
 						b = self.events[self.traces[i][j]]
 						c = self.events[self.traces[i][j+1]]
-						#if self.confident(b, c) and self.confident(c, b) and self.dependent(b, c, True) :
-						if self.confident(self.traces[i][j], self.traces[i][j+1], True) and self.dependent(b, c, True):
+						if self.confident(self.traces[i][j], self.traces[i][j+1], True) and self.dependent(b, c, True): 
 							self.footprint[b][c] = ">" # b is followed by c
 							self.footprint[c][b] = ">" # c is followed by b		
 		
@@ -358,13 +355,11 @@ class AlphaMiner:
 		result = list(self.Yl)
 		for i in range(len(self.Yl)):
 			for j in range(i+1, len(self.Yl)):
-				#if self.Yl[i][0] == self.Yl[j][1]:
 				for x in self.Yl[i][0]:
 					for y in self.Yl[j][1]: 
 						if x == y:
 							result = self.addDepRecur(self.Yl[j], self.Yl[i], result)
-							#break
-				#if self.Yl[i][1] == self.Yl[j][0]: # ex: [(a, b), (c)] and [(c), (b,e)]
+							
 				for x in self.Yl[i][1]:
 					for y in self.Yl[j][0]: 
 						if x == y:
@@ -372,19 +367,25 @@ class AlphaMiner:
 					
 		self.Yl = list(result)
 		print("After adding some extra dependencies:")
-		print(self.Yl)				
+		print(self.Yl)	
 		
 		
-	def addDepRecur(self, end, otherEnd, result): # recursive implicit dependencies miner, to get dependencies of any distance
-		# takes two places, "end" and "otherEnd" in parameters. Result is the set of places Yl after (maybe) adding implicit places
-		# ex: end = [(a, b), (c)] and otheEnd = [(c), (b,e)]
+		
+	def addDepRecur(self, end, otherEnd, result): # recursif implicit dependencies miner, to get dependencies of any distance
 		candidates = self.generateCandidates(end, otherEnd)
-		print("Subtraces generated")
-		print(candidates) # candidates: [[a, e], [a, d], [b, d], [b, e]]
-		for c in range(len(candidates)):
+		
+		c = 0
+		while c < len(candidates):
 			if not self.isInSet(self.traces, candidates[c]):
-				result = self.addNewPlaces(candidates, result)
-				return result
+				outputT = candidates[c][1]
+				inputT = []
+				for k in range(len(candidates)):
+					if self.isInSet(self.traces, candidates[k]) and candidates[k][1] == outputT:
+						inputT.append(candidates[k][0])
+				if len(inputT) != 0:
+					result = self.addNewPlaces(inputT, outputT, otherEnd, result)
+			c+=1
+							
 		for k in range(len(self.Yl)):
 			if otherEnd[1] == self.Yl[k][0]:
 				otherEnd = self.Yl[k]
@@ -394,29 +395,73 @@ class AlphaMiner:
 		
 	def generateCandidates(self, placei, placej):
 		candidates = []
-		 # Yl[i][1] == Yl[j][0]
 		for i in range(len(placei[0])):
 			for j in range(len(placej[1])):
 				candidate = [placei[0][i], placej[1][j]]
 				candidates.append(candidate)					
-		
 		return candidates
 		
-	def addNewPlaces(self, candidates, result):# ex: candidates = [[a, e], [a, d], [b, d], [b, e]]
-		# a is always with d and b is always with e
-		for i in range(len(candidates)):
-			if self.isInSet(self.traces, candidates[i]):
-				if self.isAlwaysWith(candidates[i][0], candidates[i][1]): # is true for [a, d] and [b, e], not for the other two candidates
-					if self.isChoice(candidates[i][1]) : # ex for [a, d]: d is in the output transitions set of the place [(c), (d,e)]
-						print("The subtrace ")
-						print(candidates[i])
-						print(" is not in the set of traces.")  
-						newPlace = [[candidates[i][0]], [candidates[i][1]]]
-						if not newPlace in result:
-							print("Place added to the set of places:")
-							print(newPlace)
-							result.append(newPlace)
+	def addNewPlaces(self, inputT, outputT, place, result): 
+		# inputT, outputT, result. A place must be put before outputT, with all inputTs putting a token in it
+		if self.isChoice(outputT, place): 
+			newPlace = [inputT, [outputT]]
+			if not newPlace in result:
+				print("Place added to the set of places Y_L:")
+				print(newPlace)
+				result.append(newPlace)
 		return result
+		
+	def isChoice(self, event, place):
+		result = False
+		if len(place[1]) > 1:
+			for other in place[1]:
+				if other != event and not self.occursWith(event, other) and not self.occursWith(other, event):
+					result = True						
+		return result			
+		
+		
+	#~ def addDepRecur(self, end, otherEnd, result): # recursive implicit dependencies miner, to get dependencies of any distance
+		#~ # takes two places, "end" and "otherEnd" in parameters. Result is the set of places Yl after (maybe) adding implicit places
+		#~ # ex: end = [(a, b), (c)] and otheEnd = [(c), (b,e)]
+		#~ candidates = self.generateCandidates(end, otherEnd)
+		#~ print("Subtraces generated")
+		#~ print(candidates) # candidates: [[a, e], [a, d], [b, d], [b, e]]
+		#~ for c in range(len(candidates)):
+			#~ if not self.isInSet(self.traces, candidates[c]):
+				#~ result = self.addNewPlaces(candidates, result)
+				#~ return result
+		#~ for k in range(len(self.Yl)):
+			#~ if otherEnd[1] == self.Yl[k][0]:
+				#~ otherEnd = self.Yl[k]
+				#~ self.addDepRecur(end, otherEnd, result)
+		#~ return result		
+		#~ 
+		#~ 
+	#~ def generateCandidates(self, placei, placej):
+		#~ candidates = []
+		 #~ # Yl[i][1] == Yl[j][0]
+		#~ for i in range(len(placei[0])):
+			#~ for j in range(len(placej[1])):
+				#~ candidate = [placei[0][i], placej[1][j]]
+				#~ candidates.append(candidate)					
+		#~ 
+		#~ return candidates
+		#~ 
+	#~ def addNewPlaces(self, candidates, result):# ex: candidates = [[a, e], [a, d], [b, d], [b, e]]
+		#~ # a is always with d and b is always with e
+		#~ for i in range(len(candidates)):
+			#~ if self.isInSet(self.traces, candidates[i]):
+				#~ if self.isAlwaysWith(candidates[i][0], candidates[i][1]): # is true for [a, d] and [b, e], not for the other two candidates
+					#~ if self.isChoice(candidates[i][1]) : # ex for [a, d]: d is in the output transitions set of the place [(c), (d,e)]
+						#~ print("The subtrace ")
+						#~ print(candidates[i])
+						#~ print(" is not in the set of traces.")  
+						#~ newPlace = [[candidates[i][0]], [candidates[i][1]]]
+						#~ if not newPlace in result:
+							#~ print("Place added to the set of places:")
+							#~ print(newPlace)
+							#~ result.append(newPlace)
+		#~ return result
 		
 	def isChoice(self, event): # ex: event d from candidate [a, d], must be from an output transitions set of a place
 		# ex for [a, d]: d is in the output transitions set of the place [(c), (d,e)]

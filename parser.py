@@ -4,6 +4,7 @@ class Parser:
 	
 	def __init__(self, logFile):
 		self.traces = []
+		self.filename = logFile
 		self.logName = ""
 		self.parse(logFile)
 

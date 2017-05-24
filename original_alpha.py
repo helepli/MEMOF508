@@ -6,9 +6,11 @@ from graphvizWriter import GraphvizWriter
 
 class AlphaMiner:
 	
-	def __init__(self, parser):
+	def __init__(self, parser, nldp = False):
 		self.parser = parser
 		self.logName = parser.getLogName()
+		self.filename = parser.filename
+		self.nldp = nldp # in mining non-local dependency mode or not
 		self.traces = parser.getTraces()
 		self.eventsList = []
 		self.events = dict() # key = event name; value = index in footprint matrix
@@ -28,22 +30,24 @@ class AlphaMiner:
 		print(self.traces)
 			
 		self.footprint = [[]] # nothing is connected yet
-		####
-		self.appearsIn = dict() # keys = an event, values = list of indexes of the traces in which the event appears 
-		self.occursWithDict = dict() # keys : an event, for each event : values : a list of events 
+		if self.nldp:
+			self.appearsIn = dict() # keys = an event, values = list of indexes of the traces in which the event appears 
+			self.occursWithDict = dict() # keys : an event, for each event : values : a list of events 
 								 # with len(appearsIn[event]) <= len(appearsIn[others in this list]) in the case of an event in a loop
-		###
+		
 		
 
 	def doYourStuff(self):	
 		
 		self.getLLOs() # !!! LLOs must be removed from the log BEFORE the footprint matrix is built
 		self.makeFootprint()
-		self.fillAppearsInDict() ###
-		self.fillOccursWithDict() ###
+		if self.nldp:
+			self.fillAppearsInDict() ###
+			self.fillOccursWithDict() ###
 		
 		self.alphaAlgorithm()
-		self.addDependencies() ###
+		if self.nldp:
+			self.addDependencies() ###
 		
 			
 	def getAllEventsFromLog(self):
@@ -51,6 +55,7 @@ class AlphaMiner:
 			for j in range(len(self.traces[i])):
 				if self.traces[i][j] not in self.eventsList:
 					self.eventsList.append(self.traces[i][j])
+		print("Set of all activities seen in the log:")
 		print(self.eventsList)	
 		self.makeEventsDict()
 		
@@ -114,7 +119,7 @@ class AlphaMiner:
 				self.traces[i].remove(item)
 			toBeRemoved = []
 		
-		print("LLOs")
+		print("Loops of length one (LLOs):")
 		print(self.LLOs)
 		print("Set of traces after removing events involved in LLOs: ")
 		print(self.traces)
@@ -171,18 +176,7 @@ class AlphaMiner:
 		print("AppearsIn dict: ")
 		print(self.appearsIn)
 		
-	####		
-		
-	#~ def isAlwaysWith(self, a, b): # not necessary
-		#~ indeed = True
-		#~ aIsInTraces = self.appearsIn[a]
-		#~ bIsInTraces = self.appearsIn[b]
-		#~ if len(aIsInTraces) != len(bIsInTraces):
-			#~ return False
-		#~ for trace in aIsInTraces:
-			#~ if trace not in bIsInTraces:
-				#~ indeed = False
-		#~ return indeed
+	
 		
 		
 	def makeFootprint(self): # here is all the fun	
@@ -199,7 +193,7 @@ class AlphaMiner:
 					self.footprint[a][b] = "||" # '||' = a and b are in parallel
 					self.footprint[b][a] = "||" 
 					
-		if self.LLTwos: # ex a b c b c b c ...b d
+		if self.LLTwos: # loops of length two; ex: a b c b c b c ...b d
 			for i in range(len(self.traces)):
 				for j in range(len(self.traces[i])-2):
 					if self.traces[i][j] == self.traces[i][j+2]:
@@ -211,7 +205,7 @@ class AlphaMiner:
 		self.displayFPM()
 		
 	def displayFPM(self):
-		print("Events index in the FP matrix:")
+		print("Events index in the footprint matrix:")
 		print(self.events)
 		print("Footprint matrix:")
 		for i in range(len(self.footprint)):
@@ -296,11 +290,15 @@ class AlphaMiner:
 		result = list(self.Yl)
 		for i in range(len(self.Yl)):
 			for j in range(i+1, len(self.Yl)):
-				if self.Yl[i][0] == self.Yl[j][1]:
-					result = self.addDepRecur(self.Yl[j], self.Yl[i], result)
-					#break
-				if self.Yl[i][1] == self.Yl[j][0]:
-					result = self.addDepRecur(self.Yl[i], self.Yl[j], result)						
+				for x in self.Yl[i][0]:
+					for y in self.Yl[j][1]: 
+						if x == y:
+							result = self.addDepRecur(self.Yl[j], self.Yl[i], result)
+					
+				for x in self.Yl[i][1]:
+					for y in self.Yl[j][0]: 
+						if x == y:
+							result = self.addDepRecur(self.Yl[i], self.Yl[j], result)						
 					
 		self.Yl = list(result)
 		print("After adding some extra dependencies:")
@@ -309,14 +307,9 @@ class AlphaMiner:
 		
 	def addDepRecur(self, end, otherEnd, result): # recursif implicit dependencies miner, to get dependencies of any distance
 		candidates = self.generateCandidates(end, otherEnd)
-		print("Subtraces generated")
-		print(candidates)
-		#placeAdded = False
 		
 		c = 0
 		while c < len(candidates):
-			print("candidate c")
-			print(candidates[c])
 			if not self.isInSet(self.traces, candidates[c]):
 				outputT = candidates[c][1]
 				inputT = []
@@ -325,12 +318,8 @@ class AlphaMiner:
 						inputT.append(candidates[k][0])
 				if len(inputT) != 0:
 					result = self.addNewPlaces(inputT, outputT, otherEnd, result)
-					#placeAdded = True
 			c+=1
-			
-		#~ if placeAdded :
-			#~ return result
-		#~ else:				
+							
 		for k in range(len(self.Yl)):
 			if otherEnd[1] == self.Yl[k][0]:
 				otherEnd = self.Yl[k]
@@ -340,7 +329,6 @@ class AlphaMiner:
 		
 	def generateCandidates(self, placei, placej):
 		candidates = []
-		 # Yl[i][1] == Yl[j][0]
 		for i in range(len(placei[0])):
 			for j in range(len(placej[1])):
 				candidate = [placei[0][i], placej[1][j]]
@@ -348,14 +336,12 @@ class AlphaMiner:
 		
 		return candidates
 		
-	def addNewPlaces(self, inputT, outputT, place, result): # inputT, outputT, result. A place must be put before outputT, with all inputTs putting a token in it
+	def addNewPlaces(self, inputT, outputT, place, result): 
+		# inputT, outputT, result. A place must be put before outputT, with all inputTs putting a token in it
 		if self.isChoice(outputT, place): 
-			#~ for i in range(len(inputT)):
-				#~ if self.isAlwaysWith(inputT[i], outputT): 
-				#~ inputSet.append(inputT[i])
 			newPlace = [inputT, [outputT]]
 			if not newPlace in result:
-				print("Place added to the set of places:")
+				print("Place added to the set of places Y_L:")
 				print(newPlace)
 				result.append(newPlace)
 		return result
@@ -365,15 +351,7 @@ class AlphaMiner:
 		if len(place[1]) > 1:
 			for other in place[1]:
 				if other != event and not self.occursWith(event, other) and not self.occursWith(other, event):
-					result = True
-			
-		#~ for i in range(len(self.Yl)):
-			#~ if event in self.Yl[i][1]:
-				#~ if len(self.Yl[i][1]) > 1:
-					#~ for other in self.Yl[i][1]:
-						#~ if other != event and not self.occursWith(event, other) and not self.occursWith(other, event):
-							#~ result = True
-							
+					result = True						
 		return result
 	
 	
@@ -421,8 +399,11 @@ if __name__ == "__main__":
 	else:
 		logFile = sys.argv[1]
 		parser = Parser(logFile)
-		
-		processMiner = AlphaMiner(parser)
+		if len(sys.argv) == 3:
+			if sys.argv[2] == "-nldp":
+				processMiner = AlphaMiner(parser, True)
+		else:
+				processMiner = AlphaMiner(parser)
 		
 		processMiner.doYourStuff()
 		

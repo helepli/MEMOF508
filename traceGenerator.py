@@ -144,7 +144,8 @@ if __name__ == "__main__":
 		pn = PetriNet(sys.argv[1])
 		
 		#traceGen = TraceGenerator(pn)
-		traceGen = TraceGenerator(pn, True, 0.05) # noise
+		traceGen = TraceGenerator(pn, True, 0.05)
+			
 		
 		#traces = traceGen.generateTraces(1000, True) # for L7
 		traces = traceGen.generateTraces(1000)

@@ -1,0 +1,1 @@
+Fig3.5=[(a,d,e,g,h), (b,d,f,g,h), (c,d,f,g,i)] 

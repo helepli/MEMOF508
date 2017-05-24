@@ -1,0 +1,1 @@
+Fig3.4=[(a,d,e,h,x), (a,c,e,g,x), (b,c,e,g,y), (b,d,e,h,y)] 
